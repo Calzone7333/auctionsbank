@@ -45,6 +45,14 @@ const Hero = () => {
 
                     {/* Main Text Content */}
                     <div className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-8 pb-10">
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-[0.2em] mb-6"
+                        >
+                            Welcome to Aquection Unik
+                        </motion.div>
+
                         <motion.h1
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}

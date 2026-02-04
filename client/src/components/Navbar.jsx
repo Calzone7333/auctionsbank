@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, Mail, User, ChevronDown, Gavel } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    // Mock State
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { user, logout } = useAuth();
 
     const location = useLocation();
 
@@ -21,9 +21,9 @@ const Navbar = () => {
     const navItems = [
         { name: 'Home', path: '/' },
         { name: 'Auctions', path: '/auctions' },
-        { name: 'Banks', path: '/banks' },
         { name: 'Plans', path: '/plans' },
-        { name: 'Blog', path: '/blogs' },
+        { name: 'About Us', path: '/about' },
+        // { name: 'Blogs', path: '/blogs' },
         { name: 'Contact', path: '/contact' },
     ];
 
@@ -47,10 +47,13 @@ const Navbar = () => {
                         </div>
                     </div>
                     <div>
-                        {!isLoggedIn ? (
+                        {!user ? (
                             <Link to="/login" className="hover:text-aq-gold transition-colors">Login / Register</Link>
                         ) : (
-                            <Link to="/dashboard" className="hover:text-aq-gold transition-colors">My Dashboard</Link>
+                            <div className="flex items-center gap-4">
+                                <span className="text-aq-gold">{user.email}</span>
+                                <button onClick={logout} className="hover:text-aq-gold transition-colors">Logout</button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -81,8 +84,8 @@ const Navbar = () => {
                                     key={item.name}
                                     to={item.path}
                                     className={`text-sm font-semibold transition-colors duration-200 ${location.pathname === item.path
-                                            ? 'text-aq-gold'
-                                            : 'text-gray-600 hover:text-aq-gold'
+                                        ? 'text-aq-gold'
+                                        : 'text-gray-600 hover:text-aq-gold'
                                         }`}
                                 >
                                     {item.name}

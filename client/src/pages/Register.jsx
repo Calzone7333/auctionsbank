@@ -1,107 +1,199 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Gavel } from 'lucide-react';
+import { Gavel, Mail, Lock, User, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
+    const navigate = useNavigate();
+    const { register } = useAuth();
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: ''
+        password: '',
+        agree: false
     });
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setFormData({
+            ...formData,
+            [name]: type === 'checkbox' ? checked : value
+        });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // TODO: Implement Registration Logic
-        alert("Registration feature coming soon with backend integration!");
+        setError('');
+        setSuccess('');
+
+        if (!formData.agree) {
+            setError('You must agree to the terms and conditions');
+            return;
+        }
+
+        try {
+            await register(formData.email, formData.password);
+            setSuccess('Registration successful! Redirecting to login...');
+            setTimeout(() => navigate('/login'), 2000);
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="flex justify-center">
-                    <Gavel className="h-12 w-12 text-blue-600" />
-                </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Create your account
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Already have an account?{' '}
-                    <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                        Sign in
-                    </Link>
-                </p>
-            </div>
+        <div className="min-h-screen bg-slate-50 font-sans flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Full Name
-                            </label>
-                            <div className="mt-1">
+            {/* Background design elements */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-aq-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-aq-gold/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+
+            <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 border border-gray-100">
+
+                {/* Left Side: Branding/Info */}
+                <div className="hidden lg:flex flex-col justify-between bg-aq-blue p-12 text-white relative h-full">
+                    <div className="absolute inset-0 bg-aq-gold/5 pointer-events-none"></div>
+
+                    <div className="relative z-10">
+                        <Link to="/" className="flex items-center gap-2 mb-12 group">
+                            <div className="p-2 bg-white/10 rounded-xl group-hover:bg-aq-gold transition-colors">
+                                <Gavel className="text-aq-gold group-hover:text-white h-6 w-6" />
+                            </div>
+                            <span className="text-2xl font-display font-bold">Aquection<span className="text-aq-gold">.</span></span>
+                        </Link>
+
+                        <h2 className="text-4xl font-display font-bold leading-tight mb-8">
+                            Join India's Most Accurate <br />
+                            <span className="text-aq-gold underline decoration-white/20 underline-offset-8">Auction Portal</span>.
+                        </h2>
+
+                        <div className="space-y-8 mt-12">
+                            <div className="flex items-center gap-6 group">
+                                <div className="p-3 bg-white/10 rounded-2xl group-hover:bg-aq-gold transition-all">
+                                    <ShieldCheck className="h-6 w-6 text-aq-gold group-hover:text-white" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-lg mb-1">Bank Verified Listings</p>
+                                    <p className="text-slate-400 text-sm">Direct sourcing from over 50+ national banks.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-6 group">
+                                <div className="p-3 bg-white/10 rounded-2xl group-hover:bg-aq-gold transition-all">
+                                    <CheckCircle2 className="h-6 w-6 text-aq-gold group-hover:text-white" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-lg mb-1">Easy Site Visits</p>
+                                    <p className="text-slate-400 text-sm">We coordinate property inspections on your behalf.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="relative z-10 bg-white/5 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+                        <p className="text-sm italic text-slate-300">"Finding auction properties was a nightmare before Aquection. Now it's my first stop for every investment."</p>
+                        <p className="mt-4 text-xs font-bold text-aq-gold">— Rajesh V., Real Estate Investor</p>
+                    </div>
+                </div>
+
+                {/* Right Side: Register Form */}
+                <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
+                    <div className="mb-10 text-center lg:text-left">
+                        <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Create Account</h3>
+                        <p className="text-slate-500 font-medium text-sm">Start your 14-day premium trial today.</p>
+                    </div>
+
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-bold">
+                            {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 rounded-2xl text-sm font-bold">
+                            {success}
+                        </div>
+                    )}
+
+                    <form className="space-y-5" onSubmit={handleSubmit}>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-widest pl-1">Full Name</label>
+                            <div className="relative">
                                 <input
-                                    id="name"
                                     name="name"
                                     type="text"
-                                    autoComplete="name"
                                     required
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    placeholder="John Doe"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-aq-gold/50 focus:border-aq-gold transition-all text-slate-700"
                                 />
+                                <User className="h-5 w-5 text-slate-400 absolute left-4 top-4.5" />
                             </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email address
-                            </label>
-                            <div className="mt-1">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-widest pl-1">Email Address</label>
+                            <div className="relative">
                                 <input
-                                    id="email"
                                     name="email"
                                     type="email"
-                                    autoComplete="email"
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    placeholder="name@company.com"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-aq-gold/50 focus:border-aq-gold transition-all text-slate-700"
                                 />
+                                <Mail className="h-5 w-5 text-slate-400 absolute left-4 top-4.5" />
                             </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <div className="mt-1">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-widest pl-1">Password</label>
+                            <div className="relative">
                                 <input
-                                    id="password"
                                     name="password"
                                     type="password"
-                                    autoComplete="new-password"
                                     required
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    placeholder="Min. 8 characters"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-aq-gold/50 focus:border-aq-gold transition-all text-slate-700"
                                 />
+                                <Lock className="h-5 w-5 text-slate-400 absolute left-4 top-4.5" />
                             </div>
                         </div>
 
-                        <div>
-                            <button
-                                type="submit"
-                                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                                Register
-                            </button>
+                        <div className="flex items-start gap-2 pl-1 pt-2">
+                            <input
+                                name="agree"
+                                type="checkbox"
+                                required
+                                checked={formData.agree}
+                                onChange={handleChange}
+                                className="h-4 w-4 rounded border-gray-300 text-aq-blue focus:ring-aq-blue mt-1"
+                            />
+                            <label className="text-xs text-slate-500 font-medium leading-relaxed">
+                                I agree to the <a href="#" className="text-aq-blue font-bold hover:underline">Terms of Service</a> and <a href="#" className="text-aq-blue font-bold hover:underline">Privacy Policy</a>.
+                            </label>
                         </div>
+
+                        <button
+                            type="submit"
+                            className="w-full py-4 bg-aq-blue text-white font-bold rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-2 group mt-4"
+                        >
+                            Create Free Account <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
                     </form>
+
+                    <div className="mt-8 text-center border-t border-slate-50 pt-8">
+                        <p className="text-sm text-slate-500 font-medium">
+                            Already have an account?{' '}
+                            <Link to="/login" className="text-aq-gold font-bold hover:underline transition-all">Sign in here</Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
