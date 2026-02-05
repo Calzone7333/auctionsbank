@@ -4,14 +4,37 @@ import AuctionCard from '../components/AuctionCard';
 import { ArrowRight, Home, Building2, Briefcase, Warehouse, Castle } from 'lucide-react'; // Icons for properties
 import { Link } from 'react-router-dom';
 
-const PropertyTypeCard = ({ icon: Icon, title, count }) => (
-    <Link to={`/auctions?type=${title}`} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col items-center text-center group">
-        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4 group-hover:bg-aq-blue transition-colors">
-            <Icon className="h-8 w-8 text-slate-600 group-hover:text-white transition-colors" />
+const PropertyTypeCard = ({ icon: Icon, title, count, gradient, textColor, borderColor }) => (
+    <Link to={`/auctions?type=${title}`} className={`relative p-8 rounded-3xl bg-white border ${borderColor} shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden group h-full flex flex-col items-start justify-between`}>
+        {/* Background Gradient Blob */}
+        <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:scale-150 transition-transform duration-700`}></div>
+
+        <div className={`w-14 h-14 rounded-2xl ${gradient} bg-opacity-10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`h-7 w-7 ${textColor}`} />
         </div>
-        <h3 className="text-lg font-bold text-slate-900 group-hover:text-aq-blue transition-colors mb-1">{title}</h3>
-        <p className="text-sm text-slate-500">{count} Properties</p>
+
+        <div>
+            <h3 className="text-xl font-display font-bold text-slate-800 mb-2 group-hover:translate-x-1 transition-transform">{title}</h3>
+            <p className="text-sm font-medium text-slate-400 group-hover:text-slate-600 transition-colors flex items-center gap-2">
+                {count} Properties <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+            </p>
+        </div>
     </Link>
+);
+
+const ProcessStep = ({ number, title, desc }) => (
+    <div className="relative pl-8 md:pl-0">
+        <div className="hidden md:flex absolute -left-4 top-0 items-center justify-center w-8 h-8 rounded-full bg-aq-blue text-white font-bold text-sm shadow-lg z-10">
+            {number}
+        </div>
+        <div className="md:border-l-2 md:border-slate-100 md:pl-12 pb-12">
+            <span className="flex md:hidden absolute left-0 top-0 items-center justify-center w-6 h-6 rounded-full bg-aq-blue text-white font-bold text-xs">
+                {number}
+            </span>
+            <h4 className="text-lg font-bold text-slate-900 mb-2">{title}</h4>
+            <p className="text-slate-500 leading-relaxed text-sm">{desc}</p>
+        </div>
+    </div>
 );
 
 const HomePage = () => {
@@ -20,122 +43,164 @@ const HomePage = () => {
 
     useEffect(() => {
         setLoading(true);
-        // Using fetch to get real data, fallback to empty array handled
-        fetch('http://localhost:8080/api/auctions')
-            .then(res => res.json())
+        fetch('http://localhost:8081/api/auctions')
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
             .then(data => {
-                setAuctions(data);
+                setAuctions(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
                 console.error("Failed to fetch auctions", err);
+                setAuctions([]);
                 setLoading(false);
-                // In production, maybe show error toast or fallback UI
             });
     }, []);
 
     return (
-        <div className="bg-slate-50 min-h-screen">
+        <div className="bg-slate-50 min-h-screen font-sans">
             <Hero />
 
             {/* Property Types Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-10">
-                <div className="text-center mb-12">
-                    <span className="text-aq-gold font-bold tracking-widest uppercase text-xs">Property Types</span>
-                    <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mt-2">Explore Asset Classes</h2>
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 mb-10">
+                <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                    <div className="max-w-xl">
+                        <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Asset Classes</span>
+                        <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 leading-tight">
+                            Explore Premium <br /> <span className="text-slate-400">Opportunities</span>
+                        </h2>
+                    </div>
+                    <p className="text-slate-500 max-w-sm text-sm leading-relaxed mb-2">
+                        Browse through our diverse portfolio of bank auction assets, from luxury residences to industrial complexes.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    <PropertyTypeCard icon={Home} title="Residential" count="120" />
-                    <PropertyTypeCard icon={Building2} title="Apartments" count="85" />
-                    <PropertyTypeCard icon={Briefcase} title="Commercial" count="42" />
-                    <PropertyTypeCard icon={Castle} title="Land" count="30" />
-                    <PropertyTypeCard icon={Warehouse} title="Industrial" count="18" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <PropertyTypeCard
+                        icon={Home} title="Residential" count="120+"
+                        gradient="from-emerald-400 to-teal-500" textColor="text-emerald-600" borderColor="border-emerald-100"
+                    />
+                    <PropertyTypeCard
+                        icon={Briefcase} title="Commercial" count="45+"
+                        gradient="from-blue-400 to-indigo-500" textColor="text-blue-600" borderColor="border-blue-100"
+                    />
+                    <PropertyTypeCard
+                        icon={Castle} title="Land & Plots" count="85+"
+                        gradient="from-amber-400 to-orange-500" textColor="text-amber-600" borderColor="border-amber-100"
+                    />
+                    <PropertyTypeCard
+                        icon={Warehouse} title="Industrial" count="24+"
+                        gradient="from-slate-400 to-slate-600" textColor="text-slate-600" borderColor="border-slate-100"
+                    />
                 </div>
             </section>
 
-            {/* Featured Auctions Section */}
-            <section className="bg-white py-20 border-t border-slate-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-end mb-12">
+            {/* Featured Auctions */}
+            <section className="bg-white py-24 relative overflow-hidden">
+                {/* Decorative Background Elements */}
+                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
                         <div>
-                            <span className="text-aq-blue font-bold tracking-widest uppercase text-xs">Properties</span>
-                            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mt-2">Featured Auctions</h2>
+                            <span className="text-aq-blue font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Featured Listings</span>
+                            <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900">
+                                Latest Auctions
+                            </h2>
                         </div>
-                        <Link to="/auctions" className="hidden sm:flex items-center text-aq-gold hover:text-yellow-600 font-bold text-sm">
-                            View All Properties <ArrowRight className="ml-2 h-4 w-4" />
+                        <Link to="/auctions" className="group flex items-center gap-3 px-6 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300">
+                            <span className="font-bold text-sm">View All Properties</span>
+                            <div className="w-6 h-6 rounded-full bg-white text-slate-900 flex items-center justify-center group-hover:bg-slate-700 group-hover:text-white transition-colors">
+                                <ArrowRight className="w-3 h-3" />
+                            </div>
                         </Link>
                     </div>
 
                     {loading ? (
-                        <div className="flex justify-center py-20">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-aq-gold"></div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-                            {auctions.slice(0, 3).map((auction) => (
-                                <div key={auction.id} className="transform hover:-translate-y-2 transition-transform duration-300">
-                                    <AuctionCard auction={auction} />
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="bg-slate-50 rounded-[2rem] h-[450px] animate-pulse"></div>
                             ))}
                         </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {auctions && auctions.length > 0 ? (
+                                auctions.slice(0, 3).map((auction) => (
+                                    <div key={auction.id} className="h-full">
+                                        <AuctionCard auction={auction} />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-3 text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-medium">No active auctions found at the moment.</p>
+                                </div>
+                            )}
+                        </div>
                     )}
+                </div>
+            </section>
 
-                    <div className="mt-8 sm:hidden text-center">
-                        <Link to="/auctions" className="inline-block px-6 py-3 border border-aq-gold text-aq-gold font-bold rounded-md hover:bg-yellow-50 transition-colors">
-                            View All Properties
-                        </Link>
+            {/* How It Works Section */}
+            <section className="py-24 bg-slate-50 border-t border-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div>
+                            <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Simple Process</span>
+                            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-8 leading-tight">
+                                Your journey to a <br />smart investment.
+                            </h2>
+                            <p className="text-slate-500 mb-10 leading-relaxed max-w-md">
+                                We've simplified the complex bank auction process into straightforward steps, ensuring transparency and ease for every investor.
+                            </p>
+
+                            <div className="space-y-2">
+                                <ProcessStep number="1" title="Search & Select" desc="Browse our curated list of verified bank auction properties and shortlist your favorites." />
+                                <ProcessStep number="2" title="Inspect & Verify" desc="Schedule a site visit and review legal documents with our assistance." />
+                                <ProcessStep number="3" title="Bid & Win" desc="Participate in the auction securely and bid for your selected property." />
+                            </div>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-aq-blue/5 rounded-[2.5rem] transform rotate-3 scale-105 z-0"></div>
+                            <img
+                                src="https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?q=80&w=1973&auto=format&fit=crop"
+                                alt="Modern Building"
+                                className="relative rounded-[2.5rem] shadow-2xl z-10 w-full h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                            />
+                            {/* Stats Card Overlay */}
+                            <div className="absolute bottom-10 -left-6 md:-left-12 z-20 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-xs animate-bounce-slow">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+                                        <Home className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Properties Sold</p>
+                                        <p className="text-2xl font-bold text-slate-900">1,250+</p>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2">
+                                    <div className="bg-green-500 h-1.5 rounded-full w-[85%]"></div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium">85% successfully closed this month</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Trust Section - Sourcing Partners */}
-            {/* <section className="bg-white py-16 border-t border-slate-100">
-                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <span className="text-aq-gold font-bold tracking-widest uppercase text-xs">Official Partners</span>
-                    <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-800 mt-2 mb-10">
-                        Sourcing auctions from top financial institutions
-                    </h2>
-                    
-                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-                         
-                         <div className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300 cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center">
-                                <span className="text-blue-600 font-bold text-lg">S</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-600 group-hover:text-blue-800">SBI</span>
-                         </div>
-
-                         <div className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300 cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-red-600/10 flex items-center justify-center">
-                                <span className="text-red-600 font-bold text-lg">H</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-600 group-hover:text-red-800">HDFC</span>
-                         </div>
-
-                         <div className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300 cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-orange-600/10 flex items-center justify-center">
-                                <span className="text-orange-600 font-bold text-lg">I</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-600 group-hover:text-orange-800">ICICI</span>
-                         </div>
-
-                         <div className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300 cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-yellow-600/10 flex items-center justify-center">
-                                <span className="text-yellow-600 font-bold text-lg">P</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-600 group-hover:text-yellow-800">PNB</span>
-                         </div>
-
-                         <div className="group flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300 cursor-pointer">
-                            <div className="w-10 h-10 rounded-full bg-rose-600/10 flex items-center justify-center">
-                                <span className="text-rose-600 font-bold text-lg">A</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-600 group-hover:text-rose-800">AXIS</span>
-                         </div>
+            {/* Partners Section */}
+            <section className="py-20 border-t border-slate-200 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mb-12">Trusted Banking Partners</p>
+                    <div className="flex flex-wrap justify-center items-center gap-10 md:gap-x-20 gap-y-10 grayscale hover:grayscale-0 transition-all duration-500">
+                        {/* Partner Logos (Using text placeholders styled as logos for now) */}
+                        {['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank'].map((bank) => (
+                            <h3 key={bank} className="text-2xl md:text-3xl font-display font-bold text-slate-300 hover:text-slate-800 transition-colors cursor-default select-none">{bank}</h3>
+                        ))}
                     </div>
-                 </div>
-            </section> */}
+                </div>
+            </section>
         </div>
     );
 };

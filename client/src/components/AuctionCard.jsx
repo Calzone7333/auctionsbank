@@ -1,77 +1,120 @@
 import React from 'react';
-import { Calendar, MapPin, Building2, IndianRupee, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { Calendar, MapPin, Building2, IndianRupee, ArrowUpRight, Home, Briefcase, Warehouse, Castle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AuctionCard = ({ auction }) => {
-    return (
-        <div className="group flex flex-col bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 overflow-hidden h-full relative">
+    // Helper to determine visual style based on property type
+    const getPropertyStyle = (type) => {
+        switch (type) {
+            case 'Residential':
+                return {
+                    gradient: 'from-emerald-400 to-teal-500',
+                    icon: Home,
+                    color: 'text-emerald-600',
+                    bg: 'bg-emerald-50'
+                };
+            case 'Commercial':
+                return {
+                    gradient: 'from-blue-400 to-indigo-500',
+                    icon: Briefcase,
+                    color: 'text-blue-600',
+                    bg: 'bg-blue-50'
+                };
+            case 'Industrial':
+                return {
+                    gradient: 'from-slate-400 to-slate-600',
+                    icon: Warehouse,
+                    color: 'text-slate-600',
+                    bg: 'bg-slate-50'
+                };
+            case 'Land':
+                return {
+                    gradient: 'from-amber-400 to-orange-500',
+                    icon: Castle,
+                    color: 'text-amber-600',
+                    bg: 'bg-amber-50'
+                };
+            default:
+                return {
+                    gradient: 'from-indigo-400 to-purple-500',
+                    icon: Building2,
+                    color: 'text-indigo-600',
+                    bg: 'bg-indigo-50'
+                };
+        }
+    };
 
-            {/* Header Badge */}
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
-                <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest shadow-sm ${auction.propertyType === 'Residential' ? 'bg-green-500 text-white' :
-                        auction.propertyType === 'Commercial' ? 'bg-aq-blue text-white' : 'bg-slate-500 text-white'
-                    }`}>
+    const style = getPropertyStyle(auction.propertyType);
+    const TypeIcon = style.icon;
+
+    return (
+        <div className="group flex flex-col bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] transition-all duration-300 border border-gray-100 overflow-hidden h-full relative hover:-translate-y-1">
+
+            {/* Visual Header / Image Placeholder */}
+            <div className={`h-32 bg-gradient-to-br ${style.gradient} relative overflow-hidden`}>
+                {/* Decorative Pattern */}
+                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+
+                {/* Type Icon Watermark */}
+                <TypeIcon className="absolute -bottom-4 -right-4 w-24 h-24 text-white opacity-20 transform rotate-12" />
+
+                {/* Badge */}
+                <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md text-slate-800 shadow-sm">
                     {auction.propertyType}
                 </span>
-                <div className="bg-white/90 backdrop-blur-sm p-1 rounded-full shadow-sm text-aq-gold">
-                    <ShieldCheck className="w-4 h-4" />
+
+                {/* Date Badge */}
+                <div className="absolute bottom-3 right-4 bg-black/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center border border-white/20">
+                    <Calendar className="w-3 h-3 mr-1.5" />
+                    {new Date(auction.auctionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
             </div>
 
-            <div className="flex-1 p-7 flex flex-col">
+            <div className="flex-1 p-5 flex flex-col">
                 <div className="flex-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Ref ID: {auction.id}</p>
-                    <h3 className="text-xl font-display font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-aq-blue transition-colors mb-4">
-                        {auction.title}
-                    </h3>
-
-                    <div className="space-y-3 mb-6">
-                        <div className="flex items-center text-sm font-medium text-slate-500">
-                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3 group-hover:bg-blue-50 transition-colors">
-                                <Building2 className="h-4 w-4 text-aq-blue" />
-                            </div>
-                            <span className="truncate">{auction.bankName}</span>
+                    {/* Bank & Location Row */}
+                    <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-3">
+                        <div className="flex items-center bg-slate-50 px-2 py-1 rounded-md">
+                            <Building2 className="w-3 h-3 mr-1.5 text-slate-400" />
+                            <span className="truncate max-w-[120px]">{auction.bankName}</span>
                         </div>
-                        <div className="flex items-center text-sm font-medium text-slate-500">
-                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3 group-hover:bg-red-50 transition-colors">
-                                <MapPin className="h-4 w-4 text-red-400" />
-                            </div>
-                            <span className="truncate">{auction.cityName}</span>
-                        </div>
-                        <div className="flex items-center text-sm font-medium text-slate-500">
-                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-3 group-hover:bg-orange-50 transition-colors">
-                                <Calendar className="h-4 w-4 text-orange-400" />
-                            </div>
-                            <span className="font-bold text-slate-700">{new Date(auction.auctionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <div className="flex items-center text-slate-400">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            <span>{auction.cityName}</span>
                         </div>
                     </div>
 
-                    <div className="pt-5 border-t border-slate-50">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reserve Price</p>
-                                <div className="flex items-center text-aq-blue">
-                                    <IndianRupee className="h-4 w-4 font-bold" />
-                                    <span className="text-xl font-display font-bold">
-                                        {new Intl.NumberFormat('en-IN').format(auction.reservePrice)}
-                                    </span>
-                                </div>
+                    {/* Title */}
+                    <Link to={`/auctions/${auction.id}`} className="block">
+                        <h3 className="text-lg font-display font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-aq-blue transition-colors mb-4 min-h-[3.5rem]">
+                            {auction.title}
+                        </h3>
+                    </Link>
+
+                    {/* Price Info */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className={`rounded-xl p-3 ${style.bg} border border-white`}>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Reserve Price</p>
+                            <div className={`flex items-center font-bold text-lg ${style.color}`}>
+                                <IndianRupee className="w-4 h-4" />
+                                {new Intl.NumberFormat('en-IN', { notation: "compact", maximumFractionDigits: 1 }).format(auction.reservePrice)}
                             </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">EMD</p>
-                                <p className="text-sm font-bold text-slate-600">
-                                    ₹{new Intl.NumberFormat('en-IN').format(auction.emdAmount)}
-                                </p>
-                            </div>
+                        </div>
+                        <div className="rounded-xl p-3 bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">EMD</p>
+                            <p className="text-sm font-bold text-slate-600">
+                                {new Intl.NumberFormat('en-IN', { notation: "compact", maximumFractionDigits: 1 }).format(auction.emdAmount)}
+                            </p>
                         </div>
                     </div>
                 </div>
 
+                {/* Action Button */}
                 <Link
                     to={`/auctions/${auction.id}`}
-                    className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-slate-50 text-slate-700 font-bold rounded-2xl hover:bg-aq-blue hover:text-white transition-all transform active:scale-95 group-hover:shadow-xl group-hover:shadow-aq-blue/10"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all text-sm group-hover/btn"
                 >
-                    Interested <ArrowUpRight className="h-4 w-4" />
+                    View Details <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
             </div>
         </div>

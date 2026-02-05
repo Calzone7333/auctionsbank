@@ -9,7 +9,7 @@ const AuctionDetails = () => {
 
     useEffect(() => {
         // Fetching auction detail
-        fetch(`http://localhost:8080/api/auctions/${id}`)
+        fetch(`http://localhost:8081/api/auctions/${id}`)
             .then(res => res.json())
             .then(data => {
                 setAuction(data);
