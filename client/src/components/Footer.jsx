@@ -17,7 +17,7 @@ const Footer = () => {
                             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
                                 <Gavel className="h-6 w-6 text-aq-blue" />
                             </div>
-                            <span className="text-2xl font-display font-bold tracking-tight">Aquection<span className="text-aq-gold">.</span></span>
+                            <span className="text-2xl font-display font-bold tracking-tight">Madrasauction<span className="text-aq-gold">.</span></span>
                         </div>
                         <p className="text-slate-300 leading-relaxed text-sm">
                             India's most trusted aggregator for bank auction properties. We simplify the search for high-value residential, commercial, and industrial assets.
@@ -75,7 +75,7 @@ const Footer = () => {
                             </li>
                             <li className="flex items-center gap-3 text-slate-300">
                                 <Mail className="h-5 w-5 text-aq-gold shrink-0" />
-                                <a href="mailto:info@aquection.com" className="text-sm hover:text-white transition">info@aquection.com</a>
+                                <a href="mailto:info@madrasauction.com" className="text-sm hover:text-white transition">info@madrasauction.com</a>
                             </li>
                         </ul>
                     </div>
@@ -86,7 +86,7 @@ const Footer = () => {
 
                 {/* Bottom Bar */}
                 <div className="mt-8 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-                    <p>&copy; {new Date().getFullYear()} Aquection. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Madrasauction. All rights reserved.</p>
                     <div className="flex gap-6">
                         <a href="#" className="hover:text-white transition">Sitemap</a>
                         <a href="#" className="hover:text-white transition">Cookies</a>

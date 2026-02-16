@@ -11,7 +11,7 @@ const About = () => {
                     Making bank auctions <br /> accessible to everyone.
                 </h1>
                 <p className="max-w-3xl mx-auto text-xl text-slate-500 leading-relaxed font-light">
-                    Aquection is an intelligent data platform that simplifies the process of finding, analyzing, and purchasing distressed assets in India.
+                    Madrasauction is an intelligent data platform that simplifies the process of finding, analyzing, and purchasing distressed assets in India.
                 </p>
             </div>
 

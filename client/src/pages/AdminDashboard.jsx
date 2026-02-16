@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                             <div className="flex justify-between items-end">
                                 <div>
                                     <h2 className="text-3xl font-bold text-slate-900">Platform Health</h2>
-                                    <p className="text-slate-500 mt-1">Real-time statistics for Aquection</p>
+                                    <p className="text-slate-500 mt-1">Real-time statistics for Madrasauction</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Server Status</p>

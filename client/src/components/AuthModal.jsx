@@ -88,7 +88,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                             <div className="p-1.5 bg-white/10 rounded-lg">
                                 <Gavel className="text-aq-gold h-5 w-5" />
                             </div>
-                            <span className="text-lg font-display font-bold">Aquection<span className="text-aq-gold">.</span></span>
+                            <span className="text-lg font-display font-bold">Madrasauction<span className="text-aq-gold">.</span></span>
                         </div>
 
                         <h2 className="text-2xl font-display font-bold leading-tight mb-6">
@@ -117,7 +117,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                             <ShieldCheck className="w-3.5 h-3.5 text-aq-gold" />
                             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">100% Secure Access</span>
                         </div>
-                        <p className="text-[9px] text-slate-500 font-medium">© 2025 Aquection India.</p>
+                        <p className="text-[9px] text-slate-500 font-medium">© 2025 Madrasauction India.</p>
                     </div>
                 </div>
 

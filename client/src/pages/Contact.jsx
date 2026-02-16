@@ -103,7 +103,7 @@ const Contact = () => {
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900">Email</h3>
                                     <p className="text-slate-500 mb-2 text-sm leading-relaxed">Our friendly team is here to help.</p>
-                                    <a href="mailto:support@aquection.com" className="text-blue-600 font-semibold hover:underline">support@aquection.com</a>
+                                    <a href="mailto:support@Madrasauction.com" className="text-blue-600 font-semibold hover:underline">support@Madrasauction.com</a>
                                 </div>
                             </div>
 

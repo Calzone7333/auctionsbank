@@ -9,19 +9,19 @@ const Terms = () => {
                     <p className="text-lg">Last Updated: February 4, 2025</p>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">1. Agreement to Terms</h2>
-                        <p>By accessing Aquection, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.</p>
+                        <p>By accessing Madrasauction, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.</p>
                     </section>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">2. Use License</h2>
-                        <p>Permission is granted to temporarily download one copy of the materials on Aquection's website for personal, non-commercial transitory viewing only.</p>
+                        <p>Permission is granted to temporarily download one copy of the materials on Madrasauction's website for personal, non-commercial transitory viewing only.</p>
                     </section>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">3. Disclaimer</h2>
-                        <p>The materials on Aquection are provided on an 'as is' basis. Aquection makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability.</p>
+                        <p>The materials on Madrasauction are provided on an 'as is' basis. Madrasauction makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability.</p>
                     </section>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">4. Limitations</h2>
-                        <p>In no event shall Aquection or its suppliers be liable for any damages arising out of the use or inability to use the materials on Aquection's website.</p>
+                        <p>In no event shall Madrasauction or its suppliers be liable for any damages arising out of the use or inability to use the materials on Madrasauction's website.</p>
                     </section>
                 </div>
             </div>

@@ -66,7 +66,7 @@ const Navbar = () => {
                             <div className="bg-aq-gold p-1 rounded-full">
                                 <Mail className="h-3 w-3 text-white" />
                             </div>
-                            <span>info@aquection.com</span>
+                            <span>info@madrasauction.com</span>
                         </div>
                     </div>
                     <div>
@@ -119,7 +119,7 @@ const Navbar = () => {
                                 <Gavel className="h-6 w-6 text-aq-gold" />
                             </div>
                             <span className="text-2xl md:text-3xl font-bold text-aq-blue tracking-tight font-display">
-                                Aquection<span className="text-aq-gold">.</span>
+                                Madrasauction<span className="text-aq-gold">.</span>
                             </span>
                         </Link>
 

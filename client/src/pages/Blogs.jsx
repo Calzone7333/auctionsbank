@@ -36,7 +36,7 @@ const Blogs = () => {
             <div className="bg-white border-b border-gray-100 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-display font-bold text-slate-900">Aquection<span className="text-aq-gold">.</span> Insights</h1>
+                        <h1 className="text-2xl font-display font-bold text-slate-900">Madrasauction<span className="text-aq-gold">.</span> Insights</h1>
                         <p className="text-sm text-slate-500">Your daily dose of real estate intelligence.</p>
                     </div>
                     <div className="relative w-full md:w-80">

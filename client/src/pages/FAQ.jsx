@@ -11,13 +11,13 @@ const categories = [
 const faqs = [
     {
         category: 'general',
-        question: "What is Aquection?",
-        answer: "Aquection is India's premier aggregator for bank auction properties. We simplify the search process by bringing multiple bank listings into one easy-to-use platform, providing you with data-driven insights to make informed decisions."
+        question: "What is Madrasauction?",
+        answer: "Madrasauction is India's premier aggregator for bank auction properties. We simplify the search process by bringing multiple bank listings into one easy-to-use platform, providing you with data-driven insights to make informed decisions."
     },
     {
         category: 'general',
         question: "Is there a fee to search for properties?",
-        answer: "No, searching for properties on Aquection includes a free tier. We also offer premium plans for advanced features like detailed reports, legal status checks, and dedicated support."
+        answer: "No, searching for properties on Madrasauction includes a free tier. We also offer premium plans for advanced features like detailed reports, legal status checks, and dedicated support."
     },
     {
         category: 'auction',

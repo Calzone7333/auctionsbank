@@ -10,7 +10,7 @@ com\aquection\entity\Blog.class
 com\aquection\security\AuthTokenFilter.class
 com\aquection\security\UserDetailsImpl.class
 com\aquection\repository\UserRepository.class
-com\aquection\AquectionApplication.class
+com\aquection\aquectionApplication.class
 com\aquection\config\WebSecurityConfig.class
 com\aquection\entity\User$Role.class
 com\aquection\entity\Auction.class

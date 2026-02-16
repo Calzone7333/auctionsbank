@@ -17,9 +17,10 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("noreply@aquection.com");
         message.setTo(toEmail);
-        message.setSubject("Verify your email - Aquection");
-        message.setText("Welcome to Aquection!\n\nPlease click the link below to verify your email address:\n" + link
-                + "\n\nIf you did not create an account, please ignore this email.");
+        message.setSubject("Verify your email - aquection");
+        message.setText(
+                "Welcome to aquection!\n\nPlease click the link below to verify your email address:\n" + link
+                        + "\n\nIf you did not create an account, please ignore this email.");
 
         mailSender.send(message);
     }

@@ -80,7 +80,7 @@ const Hero = () => {
                         transition={{ delay: 0.2 }}
                         className="flex items-center gap-2 mb-4 md:mb-6"
                     >
-                        <span className="text-white/80 text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.3em] uppercase border-b border-white/20 pb-1">Welcome to Aquection</span>
+                        <span className="text-white/80 text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.3em] uppercase border-b border-white/20 pb-1">Welcome to Madrasauction</span>
                     </motion.div>
 
                     <motion.h1

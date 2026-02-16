@@ -9,7 +9,7 @@ const Privacy = () => {
                     <p className="text-lg">Last Updated: February 4, 2025</p>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">1. Introduction</h2>
-                        <p>Welcome to Aquection. We value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our platform.</p>
+                        <p>Welcome to Madrasauction. We value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our platform.</p>
                     </section>
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 mb-4">2. Data We Collect</h2>
