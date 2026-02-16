@@ -1,0 +1,99 @@
+name: Deploy AuctionsBank (Backend + Frontend)
+
+on:
+  push:
+    branches:
+      - main  # deploy only when pushing to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      ############################
+      # 2️⃣ Build Backend (Spring Boot)
+      ############################
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Spring Boot backend
+        run: mvn clean package -f server/pom.xml
+
+      ############################
+      # 3️⃣ Setup SSH for Deployment
+      ############################
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      ############################
+      # 4️⃣ Build Frontend (React)
+      ############################
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Build Frontend
+        run: |
+          cd client
+          npm install
+          npm run build
+
+      ############################
+      # 5️⃣ Deploy Backend JAR
+      ############################
+      - name: Deploy Backend
+        run: |
+          # Create directory if it doesn't exist
+          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /home/prakash/apps/auctionsbank/server/target"
+          
+          rsync -avz --delete -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
+          server/target/aquection-server-0.0.1-SNAPSHOT.jar \
+          prakash@103.181.108.248:/home/prakash/apps/auctionsbank/server/target/
+
+      ############################
+      # 6️⃣ Deploy Frontend (dist folder)
+      ############################
+      - name: Deploy Frontend
+        run: |
+          # Create directory if it doesn't exist
+          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /home/prakash/apps/auctionsbank/client/dist"
+          
+          rsync -avz --delete -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
+          client/dist/ \
+          prakash@103.181.108.248:/home/prakash/apps/auctionsbank/client/dist/
+
+      ############################
+      # 7️⃣ Copy Frontend to Apache Dir
+      ############################
+      - name: Copy Frontend
+        run: |
+          # Ensure web directory exists and copy contents
+          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /var/www/auctionsbank && rm -rf /var/www/auctionsbank/* && cp -r /home/prakash/apps/auctionsbank/client/dist/* /var/www/auctionsbank/"
+
+      ############################
+      # 8️⃣ Restart Backend Application
+      ############################
+      - name: Restart Backend
+        run: |
+          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 << 'EOF'
+            # Stop existing backend if running
+            pkill -f 'aquection-server' || true
+            
+            # Start new backend in background
+            nohup java -jar /home/prakash/apps/auctionsbank/server/target/aquection-server-0.0.1-SNAPSHOT.jar > /home/prakash/apps/auctionsbank/server/app.log 2>&1 &
+            
+            # Optional: Reload apache if needed (though static files don't require it)
+            # sudo systemctl reload apache2
+            
+            echo "AuctionsBank Deployment Complete!"
+          EOF
