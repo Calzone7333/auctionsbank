@@ -90,7 +90,7 @@ jobs:
             pkill -f 'Madrasauction-server' || true
             
             # Start new backend in background
-            nohup java -jar /home/prakash/apps/auctionsbank/server/target/Madrasauction-server-0.0.1-SNAPSHOT.jar > /home/prakash/apps/auctionsbank/server/app.log 2>&1 &
+            nohup java -jar /home/prakash/apps/auctionsbank/server/target/aquection-server-0.0.1-SNAPSHOT.jar > /home/prakash/apps/auctionsbank/server/app.log 2>&1 &
             
             # Optional: Reload apache if needed (though static files don't require it)
             # sudo systemctl reload apache2
