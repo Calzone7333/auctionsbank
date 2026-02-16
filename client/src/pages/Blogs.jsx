@@ -2,72 +2,32 @@ import React, { useState } from 'react';
 import { Calendar, User, ArrowRight, Clock, Search, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { API_BASE_URL } from '../apiConfig';
+
 const Blogs = () => {
     const [activeTab, setActiveTab] = useState('All');
+    const [blogs, setBlogs] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data for Blogs
-    const blogs = [
-        {
-            id: 1,
-            title: "Top 5 Tips for Buying Bank Auction Properties",
-            excerpt: "Navigating the world of bank auctions can be tricky. Here are the top 5 strategies to ensure you get the best deal without hidden risks.",
-            image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=crop",
-            author: "Sarah Jenkins",
-            date: "Feb 12, 2025",
-            readTime: "5 min read",
-            category: "Guide",
-            featured: true
-        },
-        {
-            id: 2,
-            title: "Understanding E-Auctions: A Beginner's Guide",
-            excerpt: "What is an E-Auction? How does it differ from a physical auction? We break down the process step-by-step for first-time bidders.",
-            image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop",
-            author: "Rahul Sharma",
-            date: "Feb 10, 2025",
-            readTime: "8 min read",
-            category: "Education",
-            featured: false
-        },
-        {
-            id: 3,
-            title: "Commercial vs Residential: Where to Invest?",
-            excerpt: "Analyzing the ROI of commercial spaces versus residential properties in the current Indian market context.",
-            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
-            author: "Priya Mehta",
-            date: "Feb 08, 2025",
-            readTime: "6 min read",
-            category: "Investment",
-            featured: false
-        },
-        {
-            id: 4,
-            title: "Legal Checklist Before Bidding",
-            excerpt: "Don't get caught in legal tangles. Use this comprehensive checklist to verify documents.",
-            image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=1000&auto=format&fit=crop",
-            author: "Legal Team",
-            date: "Feb 05, 2025",
-            readTime: "10 min read",
-            category: "Legal",
-            featured: false
-        },
-        {
-            id: 5,
-            title: "The Future of Real Estate in 2026",
-            excerpt: "Experts predict a surge in affordable housing. Find out what this means for auction properties.",
-            image: "https://images.unsplash.com/photo-1464938050520-ef2270bb8ce8?q=80&w=1000&auto=format&fit=crop",
-            author: "Ankit Verma",
-            date: "Feb 01, 2025",
-            readTime: "4 min read",
-            category: "Trends",
-            featured: false
-        }
-    ];
+    React.useEffect(() => {
+        setLoading(true);
+        fetch(`${API_BASE_URL}/blogs`)
+            .then(res => res.json())
+            .then(data => {
+                setBlogs(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch blogs:", err);
+                setBlogs([]); // Fallback or could use mock data here as error fallback
+                setLoading(false);
+            });
+    }, []);
 
     const categories = ['All', 'Guide', 'Education', 'Investment', 'Legal', 'Trends'];
 
     const filteredBlogs = activeTab === 'All' ? blogs : blogs.filter(b => b.category === activeTab);
-    const featuredBlog = blogs.find(b => b.featured);
+    const featuredBlog = blogs.find(b => b.isFeatured); // Note: backend uses isFeatured
 
     return (
         <div className="bg-slate-50 min-h-screen font-sans">
@@ -101,7 +61,7 @@ const Blogs = () => {
                                 <div className="relative h-64 lg:h-auto overflow-hidden">
                                     <div className="absolute inset-0 bg-aq-blue/20 group-hover:bg-transparent transition-colors z-10 w-full h-full"></div>
                                     <img
-                                        src={featuredBlog.image}
+                                        src={featuredBlog.imageUrl || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=crop"}
                                         alt={featuredBlog.title}
                                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                                     />
@@ -132,7 +92,7 @@ const Blogs = () => {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold">{featuredBlog.author}</p>
-                                            <p className="text-xs text-slate-400">{featuredBlog.date}</p>
+                                            <p className="text-xs text-slate-400">{new Date(featuredBlog.createdAt).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -148,8 +108,8 @@ const Blogs = () => {
                             key={cat}
                             onClick={() => setActiveTab(cat)}
                             className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === cat
-                                    ? 'bg-slate-900 text-white shadow-md'
-                                    : 'bg-white text-slate-600 hover:bg-slate-100'
+                                ? 'bg-slate-900 text-white shadow-md'
+                                : 'bg-white text-slate-600 hover:bg-slate-100'
                                 }`}
                         >
                             {cat}
@@ -165,7 +125,7 @@ const Blogs = () => {
                             <Link to="#" key={blog.id} className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                                 <div className="relative h-48 overflow-hidden">
                                     <img
-                                        src={blog.image}
+                                        src={blog.imageUrl || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=crop"}
                                         alt={blog.title}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                     />
@@ -175,7 +135,7 @@ const Blogs = () => {
                                 </div>
                                 <div className="p-6 flex flex-col flex-grow">
                                     <div className="flex items-center text-xs text-slate-400 mb-3 gap-3">
-                                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {blog.date}</span>
+                                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(blog.createdAt).toLocaleDateString()}</span>
                                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {blog.readTime}</span>
                                     </div>
                                     <h3 className="text-xl font-display font-bold text-slate-900 mb-3 leading-snug group-hover:text-aq-blue transition-colors">

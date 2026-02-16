@@ -67,11 +67,11 @@ const Footer = () => {
                         <ul className="space-y-4">
                             <li className="flex items-start gap-3 text-slate-300">
                                 <MapPin className="h-5 w-5 text-aq-gold shrink-0 mt-0.5" />
-                                <span className="text-sm">123, Financial District,<br />Gachibowli, Hyderabad,<br />Telangana - 500032</span>
+                                <span className="text-sm">32, 1St Main Road,<br />Ayyappa Nagar, Virugambakkam,<br />Chennai - 600092</span>
                             </li>
                             <li className="flex items-center gap-3 text-slate-300">
                                 <Phone className="h-5 w-5 text-aq-gold shrink-0" />
-                                <a href="tel:+917878535701" className="text-sm hover:text-white transition">+91 78785 35701</a>
+                                <a href="tel:+919655771091" className="text-sm hover:text-white transition">+91 - 9655771091</a>
                             </li>
                             <li className="flex items-center gap-3 text-slate-300">
                                 <Mail className="h-5 w-5 text-aq-gold shrink-0" />

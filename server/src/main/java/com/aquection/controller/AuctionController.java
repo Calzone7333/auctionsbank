@@ -4,6 +4,9 @@ import com.aquection.entity.Auction;
 import com.aquection.repository.AuctionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,9 +39,35 @@ public class AuctionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Admin only endpoint in future
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Auction> getMyAuctions() {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
+    }
+
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Auction createAuction(@RequestBody Auction auction) {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        auction.setCreatedByEmail(userDetails.getUsername());
         return auctionRepository.save(auction);
+    }
+
+    @GetMapping("/public/stats")
+    public ResponseEntity<?> getPublicStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalActive", auctionRepository.countByIsActiveTrue());
+        stats.put("typeCounts", auctionRepository.countActiveAuctionsByPropertyType());
+        stats.put("banks", auctionRepository.findDistinctBankNames());
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalAuctions", auctionRepository.count());
+        return ResponseEntity.ok(stats);
     }
 }

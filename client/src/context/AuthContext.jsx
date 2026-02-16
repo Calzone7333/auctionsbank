@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '../apiConfig';
 
 const AuthContext = createContext(null);
 
@@ -15,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const response = await fetch('http://localhost:8081/api/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -27,16 +28,23 @@ export const AuthProvider = ({ children }) => {
         }
 
         const data = await response.json();
-        localStorage.setItem('user', JSON.stringify(data));
-        setUser(data);
-        return data;
+        if (data.token) {
+            localStorage.setItem('user', JSON.stringify(data));
+            setUser(data);
+            return { success: true };
+        }
     };
 
-    const register = async (email, password) => {
-        const response = await fetch('http://localhost:8081/api/auth/register', {
+    const register = async (name, email, password) => {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({
+                fullName: name,
+                email,
+                password,
+                phoneNumber: '' // Placeholder for now
+            }),
         });
 
         if (!response.ok) {
@@ -44,7 +52,8 @@ export const AuthProvider = ({ children }) => {
             throw new Error(error || 'Registration failed');
         }
 
-        return await response.text();
+        // Auto-login after registration
+        return await login(email, password);
     };
 
     const logout = () => {

@@ -41,6 +41,21 @@ public class Auction {
 
     private String noticeUrl;
 
+    // Detailed Fields
+    private String area;
+    private String facing;
+    private String possession; // Physical, Symbolic
+    private String ownership; // Freehold, Leasehold
+    private String contactOfficer;
+    private String contactNumber;
+
+    private BigDecimal bidIncrement;
+
+    private LocalDateTime inspectionDate;
+    private LocalDateTime emdLastDate;
+
+    private String createdByEmail;
+
     private boolean isActive = true;
 
     @CreationTimestamp

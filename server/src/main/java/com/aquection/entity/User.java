@@ -24,6 +24,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String passwordHash;
 
     private String fullName;
@@ -33,7 +34,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private boolean isPremium = false;
+    @com.fasterxml.jackson.annotation.JsonProperty("isVerified")
+    @Column(name = "is_verified")
+    private boolean verified = false;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isEmailVerified")
+    @Column(name = "is_email_verified")
+    private boolean emailVerified = false;
+
+    private String emailVerificationToken;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -43,7 +52,6 @@ public class User {
 
     public enum Role {
         USER,
-        ADMIN,
-        BROKER
+        ADMIN
     }
 }

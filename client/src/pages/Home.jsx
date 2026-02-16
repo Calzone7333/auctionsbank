@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import AuctionCard from '../components/AuctionCard';
 import { ArrowRight, Home, Building2, Briefcase, Warehouse, Castle } from 'lucide-react'; // Icons for properties
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../apiConfig';
 
 const PropertyTypeCard = ({ icon: Icon, title, count, gradient, textColor, borderColor }) => (
     <Link to={`/auctions?type=${title}`} className={`relative p-8 rounded-3xl bg-white border ${borderColor} shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden group h-full flex flex-col items-start justify-between`}>
@@ -41,9 +42,33 @@ const HomePage = () => {
     const [auctions, setAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [stats, setStats] = useState({
+        totalActive: 0,
+        typeCounts: {},
+        banks: []
+    });
+
     useEffect(() => {
+        // Fetch Stats
+        fetch(`${API_BASE_URL}/auctions/public/stats`)
+            .then(res => res.json())
+            .then(data => {
+                const typeCountsObj = {};
+                if (Array.isArray(data.typeCounts)) {
+                    data.typeCounts.forEach(([type, count]) => {
+                        typeCountsObj[type] = count;
+                    });
+                }
+                setStats({
+                    totalActive: data.totalActive || 0,
+                    typeCounts: typeCountsObj,
+                    banks: data.banks || []
+                });
+            })
+            .catch(err => console.error("Error fetching stats:", err));
+
         setLoading(true);
-        fetch('http://localhost:8081/api/auctions')
+        fetch(`${API_BASE_URL}/auctions`)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 return res.json();
@@ -64,11 +89,11 @@ const HomePage = () => {
             <Hero />
 
             {/* Property Types Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 mb-10">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24 mb-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
                     <div className="max-w-xl">
                         <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Asset Classes</span>
-                        <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 leading-tight">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-slate-900 leading-tight">
                             Explore Premium <br /> <span className="text-slate-400">Opportunities</span>
                         </h2>
                     </div>
@@ -79,19 +104,19 @@ const HomePage = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <PropertyTypeCard
-                        icon={Home} title="Residential" count="120+"
+                        icon={Home} title="Residential" count={`${stats.typeCounts["Residential"] || 0}+`}
                         gradient="from-emerald-400 to-teal-500" textColor="text-emerald-600" borderColor="border-emerald-100"
                     />
                     <PropertyTypeCard
-                        icon={Briefcase} title="Commercial" count="45+"
+                        icon={Briefcase} title="Commercial" count={`${stats.typeCounts["Commercial"] || 0}+`}
                         gradient="from-blue-400 to-indigo-500" textColor="text-blue-600" borderColor="border-blue-100"
                     />
                     <PropertyTypeCard
-                        icon={Castle} title="Land & Plots" count="85+"
+                        icon={Castle} title="Land & Plots" count={`${stats.typeCounts["Land"] || stats.typeCounts["Land & Plots"] || 0}+`}
                         gradient="from-amber-400 to-orange-500" textColor="text-amber-600" borderColor="border-amber-100"
                     />
                     <PropertyTypeCard
-                        icon={Warehouse} title="Industrial" count="24+"
+                        icon={Warehouse} title="Industrial" count={`${stats.typeCounts["Industrial"] || 0}+`}
                         gradient="from-slate-400 to-slate-600" textColor="text-slate-600" borderColor="border-slate-100"
                     />
                 </div>
@@ -102,11 +127,11 @@ const HomePage = () => {
                 {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
                         <div>
                             <span className="text-aq-blue font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Featured Listings</span>
-                            <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-slate-900">
                                 Latest Auctions
                             </h2>
                         </div>
@@ -144,7 +169,7 @@ const HomePage = () => {
 
             {/* How It Works Section */}
             <section className="py-24 bg-slate-50 border-t border-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <div>
                             <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Simple Process</span>
@@ -169,14 +194,14 @@ const HomePage = () => {
                                 className="relative rounded-[2.5rem] shadow-2xl z-10 w-full h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
                             />
                             {/* Stats Card Overlay */}
-                            <div className="absolute bottom-10 -left-6 md:-left-12 z-20 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-xs animate-bounce-slow">
+                            <div className="absolute bottom-10 left-4 md:-left-12 z-20 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-xs animate-bounce-slow">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
                                         <Home className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Properties Sold</p>
-                                        <p className="text-2xl font-bold text-slate-900">1,250+</p>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Properties</p>
+                                        <p className="text-2xl font-bold text-slate-900">{stats.totalActive}+</p>
                                     </div>
                                 </div>
                                 <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2">
@@ -191,11 +216,11 @@ const HomePage = () => {
 
             {/* Partners Section */}
             <section className="py-20 border-t border-slate-200 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 text-left">
                     <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mb-12">Trusted Banking Partners</p>
                     <div className="flex flex-wrap justify-center items-center gap-10 md:gap-x-20 gap-y-10 grayscale hover:grayscale-0 transition-all duration-500">
-                        {/* Partner Logos (Using text placeholders styled as logos for now) */}
-                        {['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank'].map((bank) => (
+                        {/* Partner Logos (Dynamic from active auctions, fallback to defaults if empty) */}
+                        {(stats.banks && stats.banks.length > 0 ? stats.banks : ['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank']).map((bank) => (
                             <h3 key={bank} className="text-2xl md:text-3xl font-display font-bold text-slate-300 hover:text-slate-800 transition-colors cursor-default select-none">{bank}</h3>
                         ))}
                     </div>

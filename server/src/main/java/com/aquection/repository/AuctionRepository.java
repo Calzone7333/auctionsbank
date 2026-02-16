@@ -13,4 +13,18 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findByCityNameContainingIgnoreCase(String city);
 
     List<Auction> findByBankNameContainingIgnoreCase(String bank);
+
+    List<Auction> findByCreatedByEmail(String email);
+
+    long count();
+
+    long countByPropertyType(String propertyType);
+
+    long countByIsActiveTrue();
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT a.bankName FROM Auction a WHERE a.isActive = true")
+    List<String> findDistinctBankNames();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.propertyType, COUNT(a) FROM Auction a WHERE a.isActive = true GROUP BY a.propertyType")
+    List<Object[]> countActiveAuctionsByPropertyType();
 }

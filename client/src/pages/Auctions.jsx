@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import AuctionCard from '../components/AuctionCard';
 import FilterSidebar from '../components/FilterSidebar';
 import { Search, ArrowUpDown, LayoutGrid, List, ChevronDown } from 'lucide-react';
+import { API_BASE_URL } from '../apiConfig';
 
 const Auctions = () => {
     const [searchParams] = useSearchParams();
@@ -22,6 +23,7 @@ const Auctions = () => {
         bank: true,
         type: true
     });
+    const [viewMode, setViewMode] = useState('grid');
 
     const toggleSection = (section) => {
         setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -40,7 +42,7 @@ const Auctions = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch('http://localhost:8081/api/auctions')
+        fetch(`${API_BASE_URL}/auctions`)
             .then(res => res.json())
             .then(data => {
                 setAuctions(Array.isArray(data) ? data : []);
@@ -54,9 +56,15 @@ const Auctions = () => {
     }, []);
 
     // Extract unique values with safe checks
-    const cities = useMemo(() => [...new Set(auctions.filter(a => a?.cityName).map(a => a.cityName))].sort(), [auctions]);
-    const banks = useMemo(() => [...new Set(auctions.filter(a => a?.bankName).map(a => a.bankName))].sort(), [auctions]);
-    const types = useMemo(() => [...new Set(auctions.filter(a => a?.propertyType).map(a => a.propertyType))].sort(), [auctions]);
+    const cities = useMemo(() =>
+        Array.isArray(auctions) ? [...new Set(auctions.filter(a => a?.cityName).map(a => a.cityName))].sort() : [],
+        [auctions]);
+    const banks = useMemo(() =>
+        Array.isArray(auctions) ? [...new Set(auctions.filter(a => a?.bankName).map(a => a.bankName))].sort() : [],
+        [auctions]);
+    const types = useMemo(() =>
+        Array.isArray(auctions) ? [...new Set(auctions.filter(a => a?.propertyType).map(a => a.propertyType))].sort() : [],
+        [auctions]);
 
     // Handle Checkbox Changes
     const handleCheckboxChange = (value, state, setState) => {
@@ -98,18 +106,20 @@ const Auctions = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen font-sans">
-            {/* Page Header Background */}
-            <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center space-x-2 text-sm text-slate-500">
-                        <span>Home</span>
-                        <span>/</span>
-                        <span className="font-bold text-slate-800">Auctions</span>
-                    </div>
+            {/* Header Section */}
+            <div className="bg-slate-900 pt-10 pb-24 text-center px-4">
+                <div className="max-w-3xl mx-auto space-y-4">
+                    <h1 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tight">
+                        Discover Prime Bank Auctions
+                    </h1>
+                    <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                        Explore verified properties from top national banks at unbeatable prices. Secure your investment today.
+                    </p>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Main Content Area - overlapping the dark header */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-20 relative z-10">
                 <div className="flex flex-col lg:flex-row gap-8">
 
                     {/* Sidebar Filters */}
@@ -136,49 +146,46 @@ const Auctions = () => {
 
                     {/* Main Content */}
                     <div className="flex-1">
-                        {/* Results Header */}
-                        <div className="mb-6 flex flex-col sm:flex-row justify-between items-end gap-4">
+                        {/* Results Toolbar */}
+                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div>
-                                <h1 className="text-3xl font-display font-bold text-slate-900 mb-2">
-                                    Active Auctions
-                                </h1>
-                                <p className="text-slate-500">
-                                    {loading ? 'Searching properties...' : (
-                                        <>
-                                            Showing <span className="font-bold text-slate-900">{filteredAuctions.length}</span> properties
-                                            {activeFiltersCount > 0 && <span> with active filters</span>}
-                                        </>
-                                    )}
-                                </p>
+                                <h2 className="font-bold text-slate-800 text-lg">
+                                    {loading ? 'Loading...' : `${filteredAuctions.length} Properties Found`}
+                                </h2>
+                                {activeFiltersCount > 0 && (
+                                    <p className="text-xs text-slate-500 mt-0.5">Applied filters affecting results</p>
+                                )}
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1">
-                                    <button className="p-2 text-slate-800 bg-gray-100 rounded-md shadow-sm">
-                                        <LayoutGrid className="w-4 h-4" />
-                                    </button>
-                                    {/* List view button placeholder - functionality to be added if needed */}
-                                    <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
-                                        <List className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                <div className="relative group">
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="relative group w-full sm:w-48">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <ArrowUpDown className="h-4 w-4 text-slate-400 group-hover:text-aq-blue transition-colors" />
+                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
                                     </div>
                                     <select
-                                        className="appearance-none bg-white border border-gray-200 hover:border-aq-blue text-slate-700 py-2.5 pl-10 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-aq-blue/20 transition-all cursor-pointer shadow-sm"
+                                        className="appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 pl-10 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all cursor-pointer"
                                         value={priceSort}
                                         onChange={(e) => setPriceSort(e.target.value)}
                                     >
-                                        <option value="">Sort by: Featured</option>
+                                        <option value="">Sort: Relevant</option>
                                         <option value="asc">Price: Low to High</option>
                                         <option value="desc">Price: High to Low</option>
                                     </select>
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <ChevronDown className="h-4 w-4 text-slate-400" />
-                                    </div>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                </div>
+                                <div className="flex bg-slate-50 rounded-lg p-1 border border-slate-200">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`p-2 rounded transition-all ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        <LayoutGrid className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`p-2 rounded transition-all ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        <List className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -203,28 +210,27 @@ const Auctions = () => {
                         ) : (
                             <>
                                 {filteredAuctions.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <div className={`grid ${viewMode === 'list' ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'}`}>
                                         {filteredAuctions.map((auction) => (
                                             <div key={auction.id} className="transition-all duration-300 hover:-translate-y-1">
-                                                <AuctionCard auction={auction} />
+                                                <AuctionCard auction={auction} viewMode={viewMode} />
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="bg-white rounded-2xl p-16 text-center border border-gray-100 shadow-sm flex flex-col items-center">
-                                        <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-6 relative">
-                                            <Search className="h-10 w-10" />
-                                            <div className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-xs ring-4 ring-white">0</div>
+                                        <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-6">
+                                            <Search className="h-8 w-8" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 mb-2">No properties match your filters</h3>
-                                        <p className="text-slate-500 max-w-sm mx-auto mb-8 leading-relaxed">
-                                            We couldn't find any auctions matching your current criteria. Try removing some filters or searching for different keywords.
+                                        <h3 className="text-xl font-bold text-slate-900 mb-2">No properties found</h3>
+                                        <p className="text-slate-500 max-w-sm mx-auto mb-8 text-sm">
+                                            We couldn't find matches for your filters. Try clearing them or using different keywords.
                                         </p>
                                         <button
                                             onClick={clearFilters}
-                                            className="px-8 py-3 bg-aq-blue text-white font-bold rounded-xl hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 hover:shadow-xl active:scale-95"
+                                            className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-all text-sm"
                                         >
-                                            Clear All Filters
+                                            Reset Filters
                                         </button>
                                     </div>
                                 )}
