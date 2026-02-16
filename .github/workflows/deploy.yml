@@ -57,7 +57,7 @@ jobs:
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /home/prakash/apps/auctionsbank/server/target"
           
           rsync -avz --delete -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
-          server/target/Madrasauction-server-0.0.1-SNAPSHOT.jar \
+          server/target/aquection-server-0.0.1-SNAPSHOT.jar \
           prakash@103.181.108.248:/home/prakash/apps/auctionsbank/server/target/
 
       ############################
@@ -87,7 +87,7 @@ jobs:
         run: |
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 << 'EOF'
             # Stop existing backend if running
-            pkill -f 'Madrasauction-server' || true
+            pkill -f 'aquection-server' || true
             
             # Start new backend in background
             nohup java -jar /home/prakash/apps/auctionsbank/server/target/aquection-server-0.0.1-SNAPSHOT.jar > /home/prakash/apps/auctionsbank/server/app.log 2>&1 &
