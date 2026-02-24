@@ -1,228 +1,287 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Clock,
+    ShieldCheck,
+    TrendingUp,
+    Globe,
+    Users,
+    Award,
+    ArrowRight,
+    MapPin,
+    Plus,
+    Building2,
+    Landmark,
+    Home,
+    Gavel,
+    CheckCircle2,
+    Briefcase,
+    Warehouse,
+    Castle
+} from 'lucide-react';
+
 import Hero from '../components/Hero';
 import AuctionCard from '../components/AuctionCard';
-import { ArrowRight, Home, Building2, Briefcase, Warehouse, Castle } from 'lucide-react'; // Icons for properties
-import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../apiConfig';
 
-const PropertyTypeCard = ({ icon: Icon, title, count, gradient, textColor, borderColor }) => (
-    <Link to={`/auctions?type=${title}`} className={`relative p-8 rounded-3xl bg-white border ${borderColor} shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden group h-full flex flex-col items-start justify-between`}>
-        {/* Background Gradient Blob */}
-        <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:scale-150 transition-transform duration-700`}></div>
+const TabContent = ({ activeTab }) => {
+    const content = {
+        'knowledge': {
+            title: 'Market Expertise',
+            image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2084&auto=format&fit=crop',
+            desc: 'Our team specializes in the intricate world of bank auctions, providing you with data-driven insights and verified opportunities for high-yield investments.'
+        },
+        'excellence': {
+            title: 'Verified Opportunities',
+            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop',
+            desc: 'We pride ourselves on our rigorous vetting process. Every auction on our platform is sourced from reputable financial institutions and legal channels.'
+        },
+        'pricing': {
+            title: 'Transparent Process',
+            image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1911&auto=format&fit=crop',
+            desc: 'Real estate investment shouldn\'t be a mystery. We provide clear pricing, EMD details, and legal documentation to ensure a seamless transparent journey.'
+        }
+    };
 
-        <div className={`w-14 h-14 rounded-2xl ${gradient} bg-opacity-10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`h-7 w-7 ${textColor}`} />
-        </div>
+    const current = content[activeTab] || content['excellence'];
 
-        <div>
-            <h3 className="text-xl font-display font-bold text-slate-800 mb-2 group-hover:translate-x-1 transition-transform">{title}</h3>
-            <p className="text-sm font-medium text-slate-400 group-hover:text-slate-600 transition-colors flex items-center gap-2">
-                {count} Properties <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-            </p>
-        </div>
-    </Link>
-);
-
-const ProcessStep = ({ number, title, desc }) => (
-    <div className="relative pl-8 md:pl-0">
-        <div className="hidden md:flex absolute -left-4 top-0 items-center justify-center w-8 h-8 rounded-full bg-aq-blue text-white font-bold text-sm shadow-lg z-10">
-            {number}
-        </div>
-        <div className="md:border-l-2 md:border-slate-100 md:pl-12 pb-12">
-            <span className="flex md:hidden absolute left-0 top-0 items-center justify-center w-6 h-6 rounded-full bg-aq-blue text-white font-bold text-xs">
-                {number}
-            </span>
-            <h4 className="text-lg font-bold text-slate-900 mb-2">{title}</h4>
-            <p className="text-slate-500 leading-relaxed text-sm">{desc}</p>
-        </div>
-    </div>
-);
+    return (
+        <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+        >
+            <div className="relative">
+                <div className="absolute -top-4 -left-4 w-24 h-24 bg-brand-blue/10 rounded-full blur-2xl"></div>
+                <img src={current.image} alt={current.title} className="rounded-2xl shadow-2xl relative z-10 w-full aspect-video object-cover" />
+                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-brand-blue rounded-2xl -z-10"></div>
+            </div>
+            <div className="space-y-6">
+                <h3 className="text-3xl font-display font-bold text-brand-dark">{current.title}</h3>
+                <p className="text-slate-500 leading-relaxed text-lg italic">"{current.desc}"</p>
+                <div className="space-y-4">
+                    <p className="text-slate-600">
+                        At Madrasauction Property Auctions, we bridging the gap between distressed bank assets and smart investors. Our professionals bring decades of experience in real estate and legal advisory to your fingertips.
+                    </p>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 const HomePage = () => {
     const [auctions, setAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    const [stats, setStats] = useState({
-        totalActive: 0,
-        typeCounts: {},
-        banks: []
-    });
+    const [activeTab, setActiveTab] = useState('excellence');
 
     useEffect(() => {
-        // Fetch Stats
-        fetch(`${API_BASE_URL}/auctions/public/stats`)
-            .then(res => res.json())
-            .then(data => {
-                const typeCountsObj = {};
-                if (Array.isArray(data.typeCounts)) {
-                    data.typeCounts.forEach(([type, count]) => {
-                        typeCountsObj[type] = count;
-                    });
-                }
-                setStats({
-                    totalActive: data.totalActive || 0,
-                    typeCounts: typeCountsObj,
-                    banks: data.banks || []
-                });
-            })
-            .catch(err => console.error("Error fetching stats:", err));
-
         setLoading(true);
         fetch(`${API_BASE_URL}/auctions`)
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
-                setAuctions(Array.isArray(data) ? data : []);
+                setAuctions(Array.isArray(data) ? data.slice(0, 4) : []);
                 setLoading(false);
             })
             .catch(err => {
-                console.error("Failed to fetch auctions", err);
+                console.error("Error fetching auctions:", err);
                 setAuctions([]);
                 setLoading(false);
             });
     }, []);
 
+    const stats = [
+        { icon: Globe, label: 'Cities Covered', value: '45+' },
+        { icon: Users, label: 'Happy Investors', value: '12k+' },
+        { icon: MapPin, label: 'Success Rate', value: '94%' },
+        { icon: Award, label: 'Expert Support', value: '24/7' },
+    ];
+
     return (
-        <div className="bg-slate-50 min-h-screen font-sans">
+        <div className="bg-white min-h-screen font-sans overflow-x-hidden">
             <Hero />
 
-            {/* Property Types Section */}
-            <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24 mb-10">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-                    <div className="max-w-xl">
-                        <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Asset Classes</span>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-slate-900 leading-tight">
-                            Explore Premium <br /> <span className="text-slate-400">Opportunities</span>
-                        </h2>
+            {/* Recent Auctions Section */}
+            <section className="relative z-20 -mt-16 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-24">
+                <div className="flex justify-between items-end mb-8 px-2">
+                    <div className="space-y-1">
+                        <span className="text-brand-blue font-black tracking-[0.3em] uppercase text-[10px]">New Opportunities</span>
+                        <h2 className="text-3xl font-display font-black text-brand-dark uppercase tracking-tight">Recent Auctions</h2>
                     </div>
-                    <p className="text-slate-500 max-w-sm text-sm leading-relaxed mb-2">
-                        Browse through our diverse portfolio of bank auction assets, from luxury residences to industrial complexes.
-                    </p>
+                    <Link to="/auctions" className="text-brand-blue font-black uppercase text-[10px] tracking-widest hover:text-brand-dark transition-colors flex items-center gap-2 border-b-2 border-brand-blue pb-1">
+                        View All Listings <ArrowRight className="w-3 h-3" />
+                    </Link>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <PropertyTypeCard
-                        icon={Home} title="Residential" count={`${stats.typeCounts["Residential"] || 0}+`}
-                        gradient="from-emerald-400 to-teal-500" textColor="text-emerald-600" borderColor="border-emerald-100"
-                    />
-                    <PropertyTypeCard
-                        icon={Briefcase} title="Commercial" count={`${stats.typeCounts["Commercial"] || 0}+`}
-                        gradient="from-blue-400 to-indigo-500" textColor="text-blue-600" borderColor="border-blue-100"
-                    />
-                    <PropertyTypeCard
-                        icon={Castle} title="Land & Plots" count={`${stats.typeCounts["Land"] || stats.typeCounts["Land & Plots"] || 0}+`}
-                        gradient="from-amber-400 to-orange-500" textColor="text-amber-600" borderColor="border-amber-100"
-                    />
-                    <PropertyTypeCard
-                        icon={Warehouse} title="Industrial" count={`${stats.typeCounts["Industrial"] || 0}+`}
-                        gradient="from-slate-400 to-slate-600" textColor="text-slate-600" borderColor="border-slate-100"
-                    />
-                </div>
+                {loading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4].map(n => (
+                            <div key={n} className="h-[280px] bg-slate-50 animate-pulse rounded-xl border border-slate-100"></div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {auctions.map((auction) => (
+                            <motion.div
+                                key={auction.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                            >
+                                <AuctionCard auction={auction} />
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </section>
 
-            {/* Featured Auctions */}
-            <section className="bg-white py-24 relative overflow-hidden">
-                {/* Decorative Background Elements */}
-                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-                        <div>
-                            <span className="text-aq-blue font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Featured Listings</span>
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-slate-900">
-                                Latest Auctions
-                            </h2>
-                        </div>
-                        <Link to="/auctions" className="group flex items-center gap-3 px-6 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300">
-                            <span className="font-bold text-sm">View All Properties</span>
-                            <div className="w-6 h-6 rounded-full bg-white text-slate-900 flex items-center justify-center group-hover:bg-slate-700 group-hover:text-white transition-colors">
-                                <ArrowRight className="w-3 h-3" />
-                            </div>
-                        </Link>
-                    </div>
-
-                    {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="bg-slate-50 rounded-[2rem] h-[450px] animate-pulse"></div>
+            {/* Why Choose Us Section */}
+            <section className="py-24 bg-white overflow-hidden">
+                <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-display font-bold text-brand-dark mb-8 uppercase tracking-tight">Why Choose Madrasauction?</h2>
+                        <div className="flex justify-center items-center gap-8 md:gap-16 border-b border-slate-100 pb-4">
+                            {[
+                                { id: 'knowledge', label: 'Market Expertise' },
+                                { id: 'excellence', label: 'Verified Status' },
+                                { id: 'pricing', label: 'Transparency' }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`relative pb-4 text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'text-brand-blue' : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    {tab.label}
+                                    {activeTab === tab.id && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute bottom-0 left-0 right-0 h-1 bg-brand-blue rounded-full"
+                                        />
+                                    )}
+                                </button>
                             ))}
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {auctions && auctions.length > 0 ? (
-                                auctions.slice(0, 3).map((auction) => (
-                                    <div key={auction.id} className="h-full">
-                                        <AuctionCard auction={auction} />
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="col-span-3 text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                                    <p className="text-slate-400 font-medium">No active auctions found at the moment.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        <TabContent activeTab={activeTab} />
+                    </AnimatePresence>
                 </div>
             </section>
 
-            {/* How It Works Section */}
-            <section className="py-24 bg-slate-50 border-t border-white">
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Investment Difference Section */}
+            <section className="py-24 bg-brand-light">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <div>
-                            <span className="text-aq-gold font-bold tracking-[0.2em] uppercase text-xs mb-3 block">Simple Process</span>
-                            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-8 leading-tight">
-                                Your journey to a <br />smart investment.
+                            <h2 className="text-4xl md:text-5xl font-display font-bold text-brand-dark mb-6 leading-tight uppercase tracking-tight">
+                                Investment Portal With a Difference. <br />
+                                <span className="text-brand-blue italic">Innovation.</span>
                             </h2>
-                            <p className="text-slate-500 mb-10 leading-relaxed max-w-md">
-                                We've simplified the complex bank auction process into straightforward steps, ensuring transparency and ease for every investor.
+                            <p className="text-slate-600 mb-8 text-lg leading-relaxed">
+                                Madrasauction Property Auctions is localized as one of the leader's groups in the bank auction and real estate investment services. We continue to expand our horizons by providing innovative digital solutions supported by deep legal expertise.
                             </p>
-
                             <div className="space-y-2">
-                                <ProcessStep number="1" title="Search & Select" desc="Browse our curated list of verified bank auction properties and shortlist your favorites." />
-                                <ProcessStep number="2" title="Inspect & Verify" desc="Schedule a site visit and review legal documents with our assistance." />
-                                <ProcessStep number="3" title="Bid & Win" desc="Participate in the auction securely and bid for your selected property." />
+                                <h4 className="font-bold text-brand-dark uppercase tracking-wider">Our Commitment</h4>
+                                <p className="text-slate-400 text-sm italic">Excellence in every bid.</p>
                             </div>
                         </div>
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-aq-blue/5 rounded-[2.5rem] transform rotate-3 scale-105 z-0"></div>
-                            <img
-                                src="https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?q=80&w=1973&auto=format&fit=crop"
-                                alt="Modern Building"
-                                className="relative rounded-[2.5rem] shadow-2xl z-10 w-full h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                            />
-                            {/* Stats Card Overlay */}
-                            <div className="absolute bottom-10 left-4 md:-left-12 z-20 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-xs animate-bounce-slow">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
-                                        <Home className="w-6 h-6" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {[
+                                {
+                                    title: 'Asset Portfolio',
+                                    img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop',
+                                    desc: "Explore a vast portfolio of residential and commercial assets from leading banks."
+                                },
+                                {
+                                    title: 'Strategic Insights',
+                                    img: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=2070&auto=format&fit=crop',
+                                    desc: "Get professional analysis on market valuation and future growth potential."
+                                }
+                            ].map((item, idx) => (
+                                <div key={idx} className="bg-white rounded-2xl shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-300">
+                                    <div className="h-48 overflow-hidden">
+                                        <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Properties</p>
-                                        <p className="text-2xl font-bold text-slate-900">{stats.totalActive}+</p>
+                                    <div className="p-6 space-y-4">
+                                        <h3 className="font-black text-brand-dark text-lg uppercase tracking-tight">{item.title}</h3>
+                                        <p className="text-slate-500 text-xs leading-relaxed">{item.desc}</p>
+                                        <button className="w-10 h-10 rounded-full bg-brand-blue flex items-center justify-center text-white hover:scale-110 transition-transform">
+                                            <ArrowRight size={18} />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2">
-                                    <div className="bg-green-500 h-1.5 rounded-full w-[85%]"></div>
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-medium">85% successfully closed this month</p>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Partners Section */}
-            <section className="py-20 border-t border-slate-200 bg-white">
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 text-left">
-                    <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mb-12">Trusted Banking Partners</p>
-                    <div className="flex flex-wrap justify-center items-center gap-10 md:gap-x-20 gap-y-10 grayscale hover:grayscale-0 transition-all duration-500">
-                        {/* Partner Logos (Dynamic from active auctions, fallback to defaults if empty) */}
-                        {(stats.banks && stats.banks.length > 0 ? stats.banks : ['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank']).map((bank) => (
-                            <h3 key={bank} className="text-2xl md:text-3xl font-display font-bold text-slate-300 hover:text-slate-800 transition-colors cursor-default select-none">{bank}</h3>
-                        ))}
+            {/* Unmatched Opportunities Section */}
+            <section className="py-24 bg-brand-dark relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+                    <Globe size={800} className="text-white" />
+                </div>
+
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+                        <div className="lg:col-span-1">
+                            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-8 leading-[1.2] uppercase tracking-tight">
+                                Expert Help. <br />
+                                <span className="text-brand-light/40">High Returns.</span>
+                            </h2>
+                            <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-brand-blue transition-colors cursor-pointer group">
+                                <Plus size={24} className="group-hover:rotate-90 transition-transform" />
+                            </div>
+                        </div>
+                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {[
+                                { icon: Landmark, title: 'BANK AUCTIONS', desc: 'Secure properties directly from bank inventory at competitive reserve prices.' },
+                                { icon: Building2, title: 'RESIDENTIAL', desc: 'Find your dream home or rental investment from a verified list of apartments and houses.' },
+                                { icon: Home, title: 'COMMERCIAL', desc: 'Office spaces, retail shops, and warehouses for your business growth.' },
+                                { icon: MapPin, title: 'INDUSTRIAL', desc: 'Strategic industrial plots and manufacturing units ready for acquisition.' }
+                            ].map((service, idx) => (
+                                <div key={idx} className="border border-white/10 p-8 rounded-xl hover:bg-white/5 transition-colors group">
+                                    <div className="flex gap-6 items-start">
+                                        <div className="pt-1">
+                                            <service.icon size={32} className="text-brand-blue group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <h3 className="font-bold text-white uppercase tracking-wider">{service.title}</h3>
+                                            <p className="text-slate-400 text-sm leading-relaxed">{service.desc}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Stats Section */}
+            <section className="py-24 bg-white">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-16">
+                            {stats.map((stat, idx) => (
+                                <div key={idx} className="space-y-2">
+                                    <span className="text-5xl font-bold text-brand-dark">{stat.value}</span>
+                                    <p className="text-slate-400 text-[10px] uppercase tracking-[0.3em] font-black">{stat.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="relative">
+                            <img src="https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=2070&auto=format&fit=crop" alt="Digital Map" className="w-full opacity-80" />
+                            <div className="absolute top-1/2 left-1/3 animate-ping">
+                                <MapPin size={24} className="text-brand-blue" />
+                            </div>
+                            <div className="absolute top-1/4 left-2/3 animate-ping">
+                                <MapPin size={24} className="text-brand-blue" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

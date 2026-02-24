@@ -13,6 +13,13 @@ export default {
             colors: {
                 'aq-blue': '#032D5F',
                 'aq-gold': '#D4AF37',
+                'brand-blue': '#0066FF',
+                'brand-dark': '#01152B',
+                'brand-light': '#F4F7FA',
+            },
+            animation: {
+                'bounce-slow': 'bounce 3s infinite',
+                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
         },
     },

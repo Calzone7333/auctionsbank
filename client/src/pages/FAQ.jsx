@@ -55,10 +55,10 @@ const FAQ = () => {
     return (
         <div className="bg-white min-h-screen font-sans text-slate-800">
             {/* Header */}
-            <div className="bg-slate-50 border-b border-gray-100 py-20 px-4 text-center">
+            <div className="bg-slate-50 border-b border-gray-100 py-24 px-4 text-center">
                 <div className="max-w-3xl mx-auto">
-                    <p className="text-blue-600 font-semibold uppercase tracking-wide text-sm mb-4">Support Center</p>
-                    <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">How can we help?</h1>
+                    <p className="text-[10px] font-black text-brand-blue uppercase tracking-[0.4em] mb-4">Support Center</p>
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-brand-dark mb-6 uppercase tracking-tight">How can we <br /> help?</h1>
 
                     {/* Search Bar - Visual Only for now */}
                     <div className="max-w-md mx-auto relative mt-8">
@@ -67,7 +67,7 @@ const FAQ = () => {
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-11 pr-4 py-4 bg-white border border-gray-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all"
+                            className="block w-full pl-11 pr-4 py-4 bg-white border border-gray-200 rounded-xl text-brand-dark placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue shadow-lg shadow-slate-200/50 transition-all"
                             placeholder="Search for answers..."
                         />
                     </div>
@@ -86,12 +86,12 @@ const FAQ = () => {
                                 <button
                                     key={category.id}
                                     onClick={() => { setActiveCategory(category.id); setOpenIndex(null); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeCategory === category.id
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${activeCategory === category.id
+                                        ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-brand-dark'
                                         }`}
                                 >
-                                    <Icon className={`w-4 h-4 ${activeCategory === category.id ? 'text-blue-600' : 'text-slate-400'}`} />
+                                    <Icon className={`w-4 h-4 ${activeCategory === category.id ? 'text-white' : 'text-slate-400'}`} />
                                     {category.name}
                                 </button>
                             );
@@ -104,16 +104,16 @@ const FAQ = () => {
                             {filteredFaqs.map((faq, index) => (
                                 <div
                                     key={index}
-                                    className={`border rounded-2xl transition-all duration-200 ${openIndex === index
-                                            ? 'border-blue-100 bg-blue-50/30'
-                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                    className={`border rounded-2xl transition-all duration-300 ${openIndex === index
+                                        ? 'border-brand-blue/20 bg-brand-blue/5'
+                                        : 'border-slate-100 bg-white hover:border-brand-blue/10'
                                         }`}
                                 >
                                     <button
                                         onClick={() => setOpenIndex(openIndex === index ? null : index)}
                                         className="w-full flex items-start justify-between p-6 text-left focus:outline-none"
                                     >
-                                        <span className={`text-base font-bold pr-8 transition-colors ${openIndex === index ? 'text-blue-700' : 'text-slate-800'
+                                        <span className={`text-base font-bold pr-8 transition-colors ${openIndex === index ? 'text-brand-blue' : 'text-slate-800'
                                             }`}>
                                             {faq.question}
                                         </span>
@@ -136,20 +136,20 @@ const FAQ = () => {
                         </div>
 
                         {/* Contact CTA */}
-                        <div className="mt-16 bg-slate-900 rounded-2xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
+                        <div className="mt-16 bg-brand-dark rounded-2xl p-8 sm:p-14 text-center text-white relative overflow-hidden">
                             {/* Abstract bg shapes */}
                             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
-                            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+                            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-brand-blue/10 rounded-full blur-3xl"></div>
 
                             <div className="relative z-10 flex flex-col items-center">
-                                <div className="p-3 bg-white/10 rounded-xl mb-6 backdrop-blur-sm">
-                                    <MessageSquare className="w-6 h-6 text-blue-300" />
+                                <div className="p-4 bg-white/10 rounded-2xl mb-6 backdrop-blur-sm border border-white/10">
+                                    <MessageSquare className="w-6 h-6 text-brand-blue" />
                                 </div>
-                                <h3 className="text-2xl font-bold mb-4">Still have questions?</h3>
-                                <p className="text-slate-400 mb-8 max-w-md mx-auto">Can't find the answer you're looking for? Our team is happy to help.</p>
+                                <h3 className="text-3xl font-display font-black mb-4 uppercase tracking-tight">Still have questions?</h3>
+                                <p className="text-slate-400 mb-8 max-w-md mx-auto font-medium">Can't find the answer you're looking for? Our team is happy to help.</p>
                                 <Link
                                     to="/contact"
-                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/50"
+                                    className="px-10 py-4 bg-brand-blue text-white font-black rounded-md hover:bg-white hover:text-brand-dark transition-all shadow-xl shadow-brand-blue/20 uppercase text-xs tracking-[0.2em]"
                                 >
                                     Contact Support
                                 </Link>

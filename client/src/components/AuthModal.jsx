@@ -61,85 +61,89 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-brand-dark/60 backdrop-blur-md"
             />
 
-            {/* Modal Container - Reduced Size */}
+            {/* Modal Container */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.9, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-3xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px]"
+                exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                className="relative w-full max-w-2xl bg-white rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col md:flex-row"
             >
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-5 right-5 z-30 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-aq-gold hover:text-white transition-all transform hover:rotate-90"
+                    className="absolute top-6 right-6 z-30 p-2.5 rounded-full bg-slate-50 text-slate-400 hover:bg-brand-blue hover:text-white transition-all transform hover:rotate-90 group shadow-sm"
                 >
                     <X className="w-4 h-4" />
                 </button>
 
-                {/* Left Side: Info/Branding (Hidden on small screens) */}
-                <div className="hidden md:flex md:w-[38%] bg-aq-blue p-8 text-white flex-col justify-between relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,rgba(212,175,55,0.15)_0%,transparent_50%)]"></div>
+                {/* Left Side: Info/Branding */}
+                <div className="hidden md:flex md:w-[35%] bg-brand-dark p-8 text-white flex-col justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/10 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-[80px] -ml-32 -mb-32"></div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-8">
-                            <div className="p-1.5 bg-white/10 rounded-lg">
-                                <Gavel className="text-aq-gold h-5 w-5" />
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center">
+                                <Gavel className="text-brand-blue h-4 w-4" />
                             </div>
-                            <span className="text-lg font-display font-bold">Madrasauction<span className="text-aq-gold">.</span></span>
+                            <div className="flex flex-col">
+                                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Madrasauction</span>
+                                <span className="text-[7px] font-bold text-brand-blue uppercase tracking-[0.3em]">Property Auctions</span>
+                            </div>
                         </div>
 
-                        <h2 className="text-2xl font-display font-bold leading-tight mb-6">
+                        <h2 className="text-2xl font-display font-black leading-[1.1] mb-6 uppercase tracking-tight">
                             {mode === 'login' ? 'Welcome Back to Your Portal' : 'Start Your Investment Journey'}
                         </h2>
 
                         <div className="space-y-4">
                             {[
-                                'Access 10,000+ Active Auctions',
-                                'Instant Mobile & Email Alerts',
-                                'Verified Bank Documentation',
-                                'Professional Legal Support'
+                                '10,000+ Active Auctions',
+                                'Instant System Alerts',
+                                'Verified Bank Docs',
+                                '24/7 Legal Support'
                             ].map((item, i) => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div className="w-4 h-4 rounded-full bg-aq-gold/20 flex items-center justify-center flex-shrink-0">
-                                        <CheckCircle2 className="w-2.5 h-2.5 text-aq-gold" />
+                                <div key={i} className="flex items-center gap-3 group">
+                                    <div className="w-5 h-5 rounded-full bg-brand-blue/10 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-blue transition-colors">
+                                        <CheckCircle2 className="w-3 h-3 text-brand-blue group-hover:text-white transition-colors" />
                                     </div>
-                                    <span className="text-xs font-medium text-slate-300">{item}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{item}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <div className="relative z-10 pt-6 border-t border-white/10">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-aq-gold" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">100% Secure Access</span>
+                    <div className="relative z-10 pt-8 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-2">
+                            <ShieldCheck className="w-4 h-4 text-brand-blue" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">100% Secure Access</span>
                         </div>
-                        <p className="text-[9px] text-slate-500 font-medium">© 2025 Madrasauction India.</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">© 2025 Madrasauction India.</p>
                     </div>
                 </div>
 
-                {/* Right Side: Form */}
-                <div className="flex-1 p-8 md:p-10 flex flex-col justify-center bg-white relative">
-                    <div className="max-w-sm mx-auto w-full">
-                        <div className="mb-6 overflow-hidden">
+                <div className="flex-1 p-6 md:p-8 flex flex-col justify-center bg-white">
+                    <div className="max-w-[300px] mx-auto w-full">
+                        <div className="mb-4">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={mode}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <h3 className="text-xl font-display font-bold text-slate-900 mb-0.5">
+                                    <span className="text-brand-blue font-black tracking-[0.4em] uppercase text-[8px] mb-2 block">Authentication</span>
+                                    <h3 className="text-2xl font-display font-black text-brand-dark mb-1 uppercase tracking-tight">
                                         {mode === 'login' ? 'Sign In' : 'Create Account'}
                                     </h3>
-                                    <p className="text-slate-500 text-xs font-medium">
+                                    <p className="text-slate-400 text-[11px] font-medium">
                                         {mode === 'login'
-                                            ? 'Enter your credentials below.'
-                                            : 'Fill in the details to get started.'}
+                                            ? 'Enter your credentials to access.'
+                                            : 'Join our smart property community.'}
                                     </p>
                                 </motion.div>
                             </AnimatePresence>
@@ -147,21 +151,21 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mb-5 p-3.5 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-xl text-[11px] font-bold leading-relaxed shadow-sm"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="mb-4 p-2 bg-red-50 text-red-700 rounded-md text-[9px] font-black uppercase tracking-widest border-l-4 border-red-500 shadow-sm"
                             >
                                 <div className="flex items-center gap-2">
-                                    <X className="w-3.5 h-3.5" />
+                                    <X className="w-3 h-3 shrink-0" />
                                     {error}
                                 </div>
                             </motion.div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-3">
                             {mode === 'register' && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">Full Name</label>
                                     <div className="relative group">
                                         <input
                                             type="text"
@@ -169,15 +173,15 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder="John Doe"
-                                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-aq-gold/20 focus:border-aq-gold transition-all text-sm font-medium"
+                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
                                         />
-                                        <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-aq-gold transition-colors" />
+                                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">Email Address</label>
                                 <div className="relative group">
                                     <input
                                         type="email"
@@ -185,17 +189,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="name@email.com"
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-aq-gold/20 focus:border-aq-gold transition-all text-sm font-medium"
+                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
                                     />
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-aq-gold transition-colors" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
                                 </div>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Password</label>
+                                    <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest">Password</label>
                                     {mode === 'login' && (
-                                        <button type="button" className="text-[9px] font-black text-aq-blue hover:text-aq-gold uppercase tracking-widest transition-colors">Forgot?</button>
+                                        <button type="button" className="text-[9px] font-black text-brand-blue hover:text-brand-dark uppercase tracking-widest transition-colors">Forgot Password?</button>
                                     )}
                                 </div>
                                 <div className="relative group">
@@ -205,41 +209,39 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-aq-gold/20 focus:border-aq-gold transition-all text-sm font-medium"
+                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
                                     />
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-aq-gold transition-colors" />
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
                                 </div>
                             </div>
-
-
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 mt-2 bg-aq-blue text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="w-full py-4 mt-2 bg-brand-dark text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-md hover:bg-brand-blue transition-all duration-300 shadow-xl shadow-brand-dark/10 flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
-                                    <span className="flex items-center gap-2">
-                                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span className="flex items-center gap-3">
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                         Processing...
                                     </span>
                                 ) : (
                                     <>
                                         {mode === 'login' ? 'Sign In Now' : 'Create My Account'}
-                                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
                                     </>
                                 )}
                             </button>
                         </form>
 
-                        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-                            <p className="text-[13px] font-medium text-slate-500">
-                                {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
+                        <div className="mt-6 pt-6 border-t border-slate-50 text-center">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                {mode === 'login' ? "New to Madrasauction?" : "Already a member?"}
                                 <button
                                     onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                                    className="ml-2 text-aq-gold font-black hover:underline transition-all"
+                                    className="ml-2 text-brand-blue font-black hover:text-brand-dark transition-all underline decoration-2 underline-offset-4"
                                 >
-                                    {mode === 'login' ? 'Register Free' : 'Sign In Now'}
+                                    {mode === 'login' ? 'Register' : 'Sign In'}
                                 </button>
                             </p>
                         </div>
