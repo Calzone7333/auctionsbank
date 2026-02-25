@@ -6,9 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
-    const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
+    const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot' | 'reset-otp'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [otp, setOtp] = useState('');
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
@@ -25,6 +27,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             // Reset fields
             setEmail('');
             setPassword('');
+            setConfirmPassword('');
+            setOtp('');
             setName('');
             setPhone('');
         }
@@ -46,7 +50,20 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 onClose();
             } else if (mode === 'forgot') {
                 const message = await forgotPassword(email);
-                setSuccessMessage(message || 'Password reset link sent to your email.');
+                setSuccessMessage(message || 'OTP sent to your email.');
+                setMode('reset-otp');
+            } else if (mode === 'reset-otp') {
+                if (password !== confirmPassword) {
+                    setError('Passwords do not match');
+                    setLoading(false);
+                    return;
+                }
+                const message = await resetPassword(email, otp, password);
+                setSuccessMessage(message || 'Password reset successful. You can now login.');
+                setMode('login');
+                setPassword('');
+                setConfirmPassword('');
+                setOtp('');
             } else {
                 await register(name, email, password);
                 navigate('/');
@@ -167,14 +184,16 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 >
                                     <span className="text-brand-blue font-black tracking-[0.4em] uppercase text-[8px] mb-2 block">Authentication</span>
                                     <h3 className="text-2xl font-display font-black text-brand-dark mb-1 uppercase tracking-tight">
-                                        {mode === 'login' ? 'Sign In' : mode === 'forgot' ? 'Reset Password' : 'Create Account'}
+                                        {mode === 'login' ? 'Sign In' : (mode === 'forgot' || mode === 'reset-otp') ? 'Reset Password' : 'Create Account'}
                                     </h3>
                                     <p className="text-slate-400 text-[11px] font-medium">
                                         {mode === 'login'
                                             ? 'Enter your credentials to access.'
                                             : mode === 'forgot'
-                                                ? 'Enter your email to receive a reset link.'
-                                                : 'Join our smart property community.'}
+                                                ? 'Enter your email to receive an OTP.'
+                                                : mode === 'reset-otp'
+                                                    ? 'Enter the 6-digit OTP sent to your email.'
+                                                    : 'Join our smart property community.'}
                                     </p>
                                 </motion.div>
                             </AnimatePresence>
@@ -224,22 +243,72 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">Email Address</label>
-                                <div className="relative group">
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="name@email.com"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
-                                    />
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                            {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">Email Address</label>
+                                    <div className="relative group">
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="name@email.com"
+                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
+                                        />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {mode !== 'forgot' && (
+                            {mode === 'reset-otp' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">6-Digit OTP</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                required
+                                                maxLength={6}
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                placeholder="123456"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300 tracking-widest"
+                                            />
+                                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">New Password</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="password"
+                                                required
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
+                                            />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest ml-1">Confirm New Password</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="password"
+                                                required
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
+                                            />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {(mode === 'login' || mode === 'register') && (
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center px-1">
                                         <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest">Password</label>
@@ -279,7 +348,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                     </span>
                                 ) : (
                                     <>
-                                        {mode === 'login' ? 'Sign In Now' : mode === 'forgot' ? 'Send Reset Link' : 'Create My Account'}
+                                        {mode === 'login' ? 'Sign In Now' : mode === 'forgot' ? 'Send OTP' : mode === 'reset-otp' ? 'Update Password' : 'Create My Account'}
                                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
                                     </>
                                 )}

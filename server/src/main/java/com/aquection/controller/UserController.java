@@ -43,4 +43,25 @@ public class UserController {
     public java.util.List<User> getAllUsers() {
         return userRepository.findAll();
     }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody java.util.Map<String, String> request) {
+        String newRoleStr = request.get("role");
+        if (newRoleStr == null) {
+            return ResponseEntity.badRequest().body("Role cannot be null");
+        }
+
+        try {
+            User.Role newRole = User.Role.valueOf(newRoleStr.toUpperCase());
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Error: User not found."));
+
+            user.setRole(newRole);
+            userRepository.save(user);
+            return ResponseEntity.ok(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid role specified.");
+        }
+    }
 }

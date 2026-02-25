@@ -15,11 +15,14 @@ public class EmailService {
     @Value("${app.frontend.url:https://madrasauction.com}")
     private String frontendUrl;
 
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
     public void sendVerificationEmail(String toEmail, String token) {
         String link = frontendUrl + "/verify-email?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("noreply@aquection.com");
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("Verify your email - aquection");
         message.setText(
@@ -29,17 +32,16 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    public void sendPasswordResetEmail(String toEmail, String token) {
-        String link = frontendUrl + "/reset-password?token=" + token;
-
+    public void sendPasswordResetEmail(String toEmail, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("noreply@aquection.com");
+        message.setFrom(fromEmail);
         message.setTo(toEmail);
-        message.setSubject("Reset your password - aquection");
+        message.setSubject("Password Reset OTP - aquection");
         message.setText(
-                "You have requested to reset your password.\n\nPlease click the link below to set a new password:\n"
-                        + link
-                        + "\n\nIf you did not request this, please ignore this email. The link will expire in 24 hours.");
+                "You have requested to reset your password.\n\n" +
+                        "Your One-Time Password (OTP) is: " + otp + "\n\n" +
+                        "Please enter this OTP to set a new password. This OTP will expire in 15 minutes.\n\n" +
+                        "If you did not request this, please ignore this email.");
 
         mailSender.send(message);
     }

@@ -39,7 +39,7 @@ const Auctions = () => {
     const [priceSort, setPriceSort] = useState('');
 
     const [openSections, setOpenSections] = useState({ city: true, bank: true, type: true });
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('list');
 
     const toggleSection = (section) =>
         setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -230,7 +230,7 @@ const Auctions = () => {
                                 {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
                             </div>
                         ) : filteredAuctions.length > 0 ? (
-                            <div className={`grid gap-5 ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
+                            <div className={`grid ${viewMode === 'list' ? 'grid-cols-1 gap-0 bg-white shadow-sm' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5'}`}>
                                 {filteredAuctions.map((auction, i) => (
                                     <motion.div
                                         key={auction.id}

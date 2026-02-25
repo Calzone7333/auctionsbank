@@ -11,11 +11,15 @@ import {
     PlusSquare,
     Upload,
     MapPin,
-    DollarSign,
+    IndianRupee,
     Calendar,
     FileText,
     Type,
-    Building2
+    Building2,
+    FileEdit,
+    ClipboardList,
+    Bell,
+    Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -33,19 +37,31 @@ const AdminDashboard = () => {
     const [allAuctions, setAllAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Form State for Adding Auction
+    // Form State for Adding/Editing Auction
+    const [editingAuctionId, setEditingAuctionId] = useState(null);
     const [formLoading, setFormLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
+        borrowerName: '',
         bankName: '',
+        propertyType: 'Flat and Floor',
+        location: '',
+        area: '',
+        locality: '',
         cityName: '',
-        propertyType: 'Residential',
         reservePrice: '',
         emdAmount: '',
+        bidIncrement: '',
+        emdLastDate: '',
         auctionDate: '',
+        auctionEndDate: '',
+        inspectionDate: '',
+        bankContactDetails: '',
+        possession: 'Symbolic',
         noticeUrl: ''
     });
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -57,30 +73,78 @@ const AdminDashboard = () => {
         setFormLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auctions`, {
-                method: 'POST',
+            let uploadedFileUrl = formData.noticeUrl;
+
+            if (selectedFile) {
+                const uploadData = new FormData();
+                uploadData.append('file', selectedFile);
+
+                const uploadRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`
+                        // Note: do not set Content-Type header when using FormData; the browser will automatically add the correct boundary
+                    },
+                    body: uploadData
+                });
+
+                if (uploadRes.ok) {
+                    const uploadResult = await uploadRes.json();
+                    uploadedFileUrl = uploadResult.url;
+                } else {
+                    alert('File upload failed. Proceeding without file.');
+                }
+            }
+
+            const isEditing = !!editingAuctionId;
+            const url = isEditing
+                ? `${API_BASE_URL}/auctions/${editingAuctionId}`
+                : `${API_BASE_URL}/auctions`;
+
+            const finalFormData = { ...formData, noticeUrl: uploadedFileUrl };
+
+            // Auto-generate hidden title/description if the user has omitted them from the UI
+            if (!finalFormData.title) {
+                finalFormData.title = `${finalFormData.propertyType || 'Property'} at ${finalFormData.cityName || 'Location'}`;
+            }
+
+            const response = await fetch(url, {
+                method: isEditing ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${user.token}`
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(finalFormData),
             });
 
             if (response.ok) {
-                alert('Auction posted successfully!');
+                alert(isEditing ? 'Auction updated successfully!' : 'Auction posted successfully!');
                 setFormData({
                     title: '',
                     description: '',
+                    borrowerName: '',
                     bankName: '',
+                    propertyType: 'Flat and Floor',
+                    location: '',
+                    area: '',
+                    locality: '',
                     cityName: '',
-                    propertyType: 'Residential',
                     reservePrice: '',
                     emdAmount: '',
+                    bidIncrement: '',
+                    emdLastDate: '',
                     auctionDate: '',
+                    auctionEndDate: '',
+                    inspectionDate: '',
+                    bankContactDetails: '',
+                    possession: 'Symbolic',
                     noticeUrl: ''
                 });
-                setActiveTab('auctions');
-                // Refresh stats
+                setSelectedFile(null);
+                setEditingAuctionId(null);
+                setActiveTab(isEditing ? 'my-auctions' : 'auctions');
+
+                // Refresh data
                 const aStatsRes = await fetch(`${API_BASE_URL}/auctions/stats`, {
                     headers: { 'Authorization': `Bearer ${user.token}` }
                 });
@@ -145,15 +209,39 @@ const AdminDashboard = () => {
                 .catch(err => console.error("Error fetching users:", err));
         }
 
-        if (activeTab === 'auctions' && user?.token) {
-            fetch(`${API_BASE_URL}/auctions`, {
-                headers: { 'Authorization': `Bearer ${user.token}` }
-            })
-                .then(res => res.json())
-                .then(data => setAllAuctions(data))
-                .catch(err => console.error("Error fetching auctions:", err));
+        if (activeTab === 'auctions' || activeTab === 'my-auctions') {
+            if (user?.token) {
+                fetch(`${API_BASE_URL}/auctions`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                })
+                    .then(res => res.json())
+                    .then(data => setAllAuctions(data))
+                    .catch(err => console.error("Error fetching auctions:", err));
+            }
         }
     }, [activeTab, user, navigate]);
+
+    const handleRoleUpdate = async (userId, newRole) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.token}`
+                },
+                body: JSON.stringify({ role: newRole })
+            });
+
+            if (response.ok) {
+                setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            } else {
+                alert('Failed to update user role.');
+            }
+        } catch (error) {
+            console.error('Error updating role:', error);
+            alert('An error occurred.');
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -164,7 +252,7 @@ const AdminDashboard = () => {
         <button
             onClick={() => setActiveTab(id)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${activeTab === id
-                ? 'bg-aq-blue text-white shadow-lg shadow-aq-blue/20'
+                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20'
                 : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
         >
@@ -174,346 +262,570 @@ const AdminDashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 font-display flex">
+        <div className="min-h-screen bg-slate-50 font-sans flex">
 
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col fixed h-full z-10">
                 <div className="p-6 border-b border-slate-100">
-                    <h1 className="text-xl font-display font-bold text-slate-900 flex items-center gap-2">
-                        <ShieldCheck className="text-aq-blue w-6 h-6" /> Admin Control
+                    <h1 className="text-xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-2">
+                        <ShieldCheck className="text-brand-blue w-6 h-6" /> Admin Control
                     </h1>
                 </div>
 
                 <div className="flex-1 p-4 space-y-2">
                     <SidebarItem id="overview" icon={LayoutDashboard} label="Admin Overview" />
                     <SidebarItem id="post-auction" icon={PlusSquare} label="Post Auction" />
+                    <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" />
                     <SidebarItem id="users" icon={Users} label="User Management" />
                     <SidebarItem id="auctions" icon={List} label="All Auctions" />
 
-                    <div className="pt-4 mt-4 border-t border-slate-100">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-aq-blue hover:bg-blue-50"
-                        >
-                            <Home className="w-5 h-5" />
-                            Back to Home
-                        </button>
-                    </div>
-                </div>
-
-                <div className="p-4 border-t border-slate-100">
-                    <div className="bg-slate-900 p-4 rounded-xl mb-4 text-white">
-                        <p className="text-[10px] text-white/50 font-bold uppercase mb-1">Signed in as Administrator</p>
-                        <p className="text-sm font-bold truncate">{user?.email}</p>
-                    </div>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-2 text-red-500 px-4 py-2 text-sm font-bold hover:bg-red-50 rounded-lg transition-colors">
-                        <LogOut className="w-4 h-4" /> Exit Portal
-                    </button>
                 </div>
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 lg:ml-64 p-6 lg:p-10">
-                <div className="max-w-6xl mx-auto">
+            <main className="flex-1 lg:ml-64 flex flex-col h-screen overflow-hidden">
+                {/* Fixed Top Header */}
+                <header className="bg-white border-b border-slate-200 px-6 lg:px-10 py-3 flex justify-end items-center z-20 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-brand-dark border border-slate-200 transition-all shadow-sm"
+                            title="Back to Home"
+                        >
+                            <Home className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-red-500 border border-slate-200 transition-all shadow-sm relative"
+                            title="Log Out"
+                        >
+                            <LogOut className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        </button>
 
-                    {activeTab === 'overview' && (
-                        <div className="space-y-8">
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <h2 className="text-3xl font-bold text-slate-900">Platform Health</h2>
-                                    <p className="text-slate-500 mt-1">Real-time statistics for Madrasauction</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Server Status</p>
-                                    <div className="flex items-center gap-2 text-emerald-500 font-bold">
-                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-                                        Operational
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-slate-500 font-medium text-sm">Total Members</h3>
-                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Users className="w-5 h-5" /></div>
-                                    </div>
-                                    <p className="text-3xl font-bold text-slate-900">{stats.totalUsers}</p>
-                                    <p className="text-xs text-green-500 mt-2 font-bold">+12.5% vs last month</p>
-                                </div>
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-slate-500 font-medium text-sm">Active Auctions</h3>
-                                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg"><List className="w-5 h-5" /></div>
-                                    </div>
-                                    <p className="text-3xl font-bold text-slate-900">{stats.totalAuctions}</p>
-                                    <p className="text-xs text-blue-500 mt-2 font-bold">{stats.totalAuctions} live listings</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-aq-blue" /> Quick Actions</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <button
-                                        onClick={() => setActiveTab('post-auction')}
-                                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-aq-blue hover:bg-blue-50 transition-all text-left group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-aq-blue/10 text-aq-blue flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                            <PlusSquare className="w-5 h-5" />
-                                        </div>
-                                        <p className="font-bold text-slate-900">Post New Auction</p>
-                                        <p className="text-xs text-slate-500 mt-1">Add a new property listing to the platform.</p>
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('users')}
-                                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-aq-blue hover:bg-blue-50 transition-all text-left group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                            <Users className="w-5 h-5" />
-                                        </div>
-                                        <p className="font-bold text-slate-900">Manage Users</p>
-                                        <p className="text-xs text-slate-500 mt-1">Review and manage platform members.</p>
-                                    </button>
-                                </div>
+                        <div className="relative group ml-1">
+                            <button
+                                className="w-8 h-8 rounded-full focus:outline-none transition-all shadow-[0_0_0_2px_theme(colors.slate.100)] hover:shadow-[0_0_0_2px_theme(colors.brand.blue)] flex items-center justify-center overflow-hidden bg-brand-blue text-white font-black text-xs cursor-default"
+                            >
+                                {(user?.fullName || user?.email || 'A').charAt(0).toUpperCase()}
+                            </button>
+                            {/* Hover tooltip */}
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                                <p className="text-sm font-black text-slate-800 truncate">{user?.fullName || 'Administrator'}</p>
+                                <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
                             </div>
                         </div>
-                    )}
+                    </div>
+                </header>
 
-                    {activeTab === 'post-auction' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-900">Post New Auction</h2>
-                                <p className="text-slate-500 mt-1">Create a new property listing on the platform.</p>
-                            </div>
+                <div className="p-6 lg:p-10 flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="max-w-6xl mx-auto pb-10">
 
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                <form onSubmit={handleFormSubmit} className="p-8 space-y-8">
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                            <FileText className="w-4 h-4 text-blue-500" /> Property Information
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="col-span-2">
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Auction Title</label>
-                                                <input
-                                                    type="text"
-                                                    name="title"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="e.g., 3BHK Luxury Apartment in Anna Nagar"
-                                                    value={formData.title}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                                                <textarea
-                                                    name="description"
-                                                    rows="4"
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="Detailed description..."
-                                                    value={formData.description}
-                                                    onChange={handleFormChange}
-                                                ></textarea>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Property Type</label>
-                                                <select
-                                                    name="propertyType"
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    value={formData.propertyType}
-                                                    onChange={handleFormChange}
-                                                >
-                                                    <option value="Residential">Residential</option>
-                                                    <option value="Commercial">Commercial</option>
-                                                    <option value="Industrial">Industrial</option>
-                                                    <option value="Agricultural">Agricultural</option>
-                                                    <option value="Land">Land / Plot</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Notice URL (Optional)</label>
-                                                <input
-                                                    type="url"
-                                                    name="noticeUrl"
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="https://..."
-                                                    value={formData.noticeUrl}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
+                        {activeTab === 'overview' && (
+                            <div className="space-y-8 max-w-4xl mx-auto">
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">Platform Health</h2>
+                                        <p className="text-slate-500 mt-1">Real-time statistics for Madrasauction</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Server Status</p>
+                                        <div className="flex items-center gap-2 text-emerald-500 font-bold">
+                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
+                                            Operational
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-emerald-500" /> Location & Bank Details
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Bank Name</label>
-                                                <input
-                                                    type="text"
-                                                    name="bankName"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="e.g., SBI"
-                                                    value={formData.bankName}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">City Name</label>
-                                                <input
-                                                    type="text"
-                                                    name="cityName"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="e.g., Chennai"
-                                                    value={formData.cityName}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-slate-500 font-medium text-xs uppercase tracking-wider">Total Members</h3>
+                                            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md"><Users className="w-4 h-4" /></div>
                                         </div>
+                                        <p className="text-2xl font-display font-black text-brand-dark">{stats.totalUsers}</p>
+                                        <p className="text-[10px] text-green-500 mt-1 font-bold">+12.5% vs last month</p>
                                     </div>
-
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                            <DollarSign className="w-4 h-4 text-amber-500" /> Financials & Schedule
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Reserve Price (₹)</label>
-                                                <input
-                                                    type="number"
-                                                    name="reservePrice"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="0.00"
-                                                    value={formData.reservePrice}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">EMD Amount (₹)</label>
-                                                <input
-                                                    type="number"
-                                                    name="emdAmount"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    placeholder="0.00"
-                                                    value={formData.emdAmount}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Auction Date</label>
-                                                <input
-                                                    type="datetime-local"
-                                                    name="auctionDate"
-                                                    required
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-aq-blue transition-all"
-                                                    value={formData.auctionDate}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-slate-500 font-medium text-xs uppercase tracking-wider">Active Auctions</h3>
+                                            <div className="p-1.5 bg-purple-50 text-purple-600 rounded-md"><List className="w-4 h-4" /></div>
                                         </div>
+                                        <p className="text-2xl font-display font-black text-brand-dark">{stats.totalAuctions}</p>
+                                        <p className="text-[10px] text-brand-blue mt-1 font-bold">{stats.totalAuctions} live listings</p>
                                     </div>
+                                </div>
 
-                                    <div className="flex justify-end pt-6 border-t border-slate-100">
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-brand-blue" /> Quick Actions</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <button
-                                            type="submit"
-                                            disabled={formLoading}
-                                            className="px-10 py-4 bg-aq-gold text-white font-bold rounded-2xl shadow-lg shadow-aq-gold/20 hover:bg-yellow-600 transition-all disabled:opacity-50"
+                                            onClick={() => setActiveTab('post-auction')}
+                                            className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-brand-blue hover:bg-blue-50 transition-all text-left group"
                                         >
-                                            {formLoading ? 'Posting...' : 'Post Auction Listing'}
+                                            <div className="w-8 h-8 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                <PlusSquare className="w-4 h-4" />
+                                            </div>
+                                            <p className="font-bold text-sm text-brand-dark">Post New Auction</p>
+                                            <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">Add a new property listing.</p>
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('users')}
+                                            className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-brand-blue hover:bg-blue-50 transition-all text-left group"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                <Users className="w-4 h-4" />
+                                            </div>
+                                            <p className="font-bold text-sm text-brand-dark">Manage Users</p>
+                                            <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">Review and manage members.</p>
                                         </button>
                                     </div>
-                                </form>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'users' && (
-                        <div className="space-y-6">
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-900">User Management</h2>
-                                <p className="text-slate-500 mt-1">View and manage registered users.</p>
+                        {activeTab === 'post-auction' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
+                                <div>
+                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">
+                                        {editingAuctionId ? 'Edit Auction' : 'Post New Auction'}
+                                    </h2>
+                                    <p className="text-slate-500 mt-1">
+                                        {editingAuctionId ? 'Update details for this property listing.' : 'Create a new property listing on the platform.'}
+                                    </p>
+                                </div>
+
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+                                        <div className="space-y-4">
+                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-brand-blue" /> Property Information
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Borrower Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="borrowerName"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="Borrower Name"
+                                                        value={formData.borrowerName}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Property Type</label>
+                                                    <select
+                                                        name="propertyType"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.propertyType}
+                                                        onChange={handleFormChange}
+                                                    >
+                                                        <option value="Flat and Floor">Flat and Floor</option>
+                                                        <option value="House and Residential Plot">House and Residential Plot</option>
+                                                        <option value="Land, Plot and Site">Land, Plot and Site</option>
+                                                        <option value="All Commercial">All Commercial</option>
+                                                        <option value="Office">Office</option>
+                                                        <option value="Shop">Shop</option>
+                                                        <option value="Industrial Plots, Land & Sheds">Industrial Plots, Land & Sheds</option>
+                                                        <option value="Factory Land & buildings">Factory Land & buildings</option>
+                                                        <option value="Car">Car</option>
+                                                        <option value="Plant and Machinery">Plant and Machinery</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Possession Status</label>
+                                                    <select
+                                                        name="possession"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.possession}
+                                                        onChange={handleFormChange}
+                                                    >
+                                                        <option value="Symbolic">Symbolic Possession</option>
+                                                        <option value="Physical">Physical Possession</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Download Auction File (Image/PDF)</label>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        onChange={(e) => setSelectedFile(e.target.files[0])}
+                                                    />
+                                                    {formData.noticeUrl && !selectedFile && (
+                                                        <p className="text-xs text-brand-blue mt-1">
+                                                            Current file: <a href={formData.noticeUrl} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
+                                                <MapPin className="w-4 h-4 text-emerald-500" /> Location & Bank Details
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="bankName"
+                                                        required
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="e.g., SBI"
+                                                        value={formData.bankName}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
+                                                    <input
+                                                        type="text"
+                                                        name="bankContactDetails"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="Officer Name & Phone"
+                                                        value={formData.bankContactDetails}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location</label>
+                                                    <input
+                                                        type="text"
+                                                        name="location"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="Specific street address or map location"
+                                                        value={formData.location}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Locality</label>
+                                                    <input
+                                                        type="text"
+                                                        name="locality"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="Locality / Area Name"
+                                                        value={formData.locality}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">City</label>
+                                                    <input
+                                                        type="text"
+                                                        name="cityName"
+                                                        required
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="e.g., Chennai"
+                                                        value={formData.cityName}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Area (Dimensions)</label>
+                                                    <input
+                                                        type="text"
+                                                        name="area"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="e.g., 1200 Sq.Ft"
+                                                        value={formData.area}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
+                                                <IndianRupee className="w-4 h-4 text-amber-500" /> Financials & Schedule
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Reserve Price (₹)</label>
+                                                    <input
+                                                        type="number"
+                                                        name="reservePrice"
+                                                        required
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="0.00"
+                                                        value={formData.reservePrice}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Amount (₹)</label>
+                                                    <input
+                                                        type="number"
+                                                        name="emdAmount"
+                                                        required
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="0.00"
+                                                        value={formData.emdAmount}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bid Increment (₹)</label>
+                                                    <input
+                                                        type="number"
+                                                        name="bidIncrement"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        placeholder="0.00"
+                                                        value={formData.bidIncrement}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Testing/EMD Submission Date</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        name="emdLastDate"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.emdLastDate}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction Start Date & Time</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        name="auctionDate"
+                                                        required
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.auctionDate}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction End Date & Time</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        name="auctionEndDate"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.auctionEndDate}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Inspection Date & Time</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        name="inspectionDate"
+                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                        value={formData.inspectionDate}
+                                                        onChange={handleFormChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                                            {editingAuctionId ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingAuctionId(null);
+                                                        setFormData({
+                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: 'Flat and Floor', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', noticeUrl: ''
+                                                        });
+                                                        setActiveTab('my-auctions');
+                                                    }}
+                                                    className="px-6 py-3 font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest"
+                                                >
+                                                    Cancel Edit
+                                                </button>
+                                            ) : <div></div>}
+                                            <button
+                                                type="submit"
+                                                disabled={formLoading}
+                                                className="px-8 py-3 bg-brand-dark text-white uppercase tracking-widest text-[11px] font-black rounded-lg shadow-lg shadow-brand-dark/20 hover:bg-brand-blue transition-all disabled:opacity-50"
+                                            >
+                                                {formLoading ? 'Saving...' : (editingAuctionId ? 'Update Auction' : 'Post Auction')}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">User</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Role</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Joined</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {allUsers.map(u => (
-                                            <tr key={u.id} className="hover:bg-slate-50/50">
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <p className="font-bold text-slate-900">{u.fullName || 'User'}</p>
-                                                        <p className="text-xs text-slate-500">{u.email}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${u.role === 'ADMIN' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-600'}`}>
-                                                        {u.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-500">
-                                                    {new Date(u.createdAt).toLocaleDateString()}
-                                                </td>
+                        )}
+
+                        {activeTab === 'users' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">User Management</h2>
+                                    <p className="text-slate-500 mt-1">View and manage registered users and their platform roles.</p>
+                                </div>
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-slate-50/80 border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">User Details</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Role Access</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Date Joined</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {allUsers.map(u => (
+                                                <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black uppercase shadow-sm border border-brand-blue/20">
+                                                                {(u.fullName || 'U').charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-sm text-brand-dark">{u.fullName || 'Unassigned Name'}</p>
+                                                                <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <select
+                                                            value={u.role}
+                                                            onChange={(e) => handleRoleUpdate(u.id, e.target.value)}
+                                                            className={`text-xs font-black px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${u.role === 'ADMIN'
+                                                                ? 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-200'
+                                                                : 'bg-slate-50 text-slate-700 border-slate-200 focus:ring-brand-blue/20 hover:bg-slate-100'
+                                                                }`}
+                                                            style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 7l5 5 5-5'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em', paddingRight: '1.75rem' }}
+                                                        >
+                                                            <option value="USER" className="font-bold text-slate-700">USER</option>
+                                                            <option value="ADMIN" className="font-bold text-purple-700">ADMIN</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm font-medium text-slate-500">
+                                                        {new Date(u.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'auctions' && (
-                        <div className="space-y-6">
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-900">All Auctions</h2>
-                                <p className="text-slate-500 mt-1">Master catalog of all property listings.</p>
-                            </div>
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Property Title</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Bank</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Price</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Posted Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {allAuctions.map(auction => (
-                                            <tr key={auction.id} className="hover:bg-slate-50/50">
-                                                <td className="px-6 py-4">
-                                                    <p className="font-bold text-slate-900 truncate max-w-xs">{auction.title}</p>
-                                                    <p className="text-xs text-slate-500">{auction.propertyName || auction.city}</p>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-700">
-                                                    {auction.bankName}
-                                                </td>
-                                                <td className="px-6 py-4 font-bold text-slate-900">
-                                                    ₹{auction.reservePrice}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-500">
-                                                    {new Date(auction.createdAt).toLocaleDateString()}
-                                                </td>
+                        )}
+                        {activeTab === 'auctions' && (
+                            <div className="space-y-4">
+                                <div>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">All Auctions</h2>
+                                    <p className="text-sm text-slate-500 mt-1">Master catalog of all property listings.</p>
+                                </div>
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-slate-50/80 border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Posted Date</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {allAuctions.map(auction => (
+                                                <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3">
+                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">{auction.propertyType || auction.cityName}</p>
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
+                                                            {auction.bankName}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-5 py-3 font-black text-sm text-brand-dark">
+                                                        ₹{auction.reservePrice}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-xs font-medium text-slate-500">
+                                                        {new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
+                        {activeTab === 'my-auctions' && (
+                            <div className="space-y-4">
+                                <div>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">Admin Auctions</h2>
+                                    <p className="text-sm text-slate-500 mt-1">Properties posted by you. You have full edit access to these.</p>
+                                </div>
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-slate-50/80 border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {allAuctions.filter(a => a.createdByEmail === user?.email).map(auction => (
+                                                <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3">
+                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                        <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType} • {auction.cityName}</p>
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
+                                                            {auction.bankName}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-5 py-3 font-black text-sm text-brand-dark">
+                                                        ₹{auction.reservePrice}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-right">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingAuctionId(auction.id);
+                                                                setFormData({
+                                                                    title: auction.title || '',
+                                                                    description: auction.description || '',
+                                                                    borrowerName: auction.borrowerName || '',
+                                                                    bankName: auction.bankName || '',
+                                                                    propertyType: auction.propertyType || 'Flat and Floor',
+                                                                    location: auction.location || '',
+                                                                    area: auction.area || '',
+                                                                    locality: auction.locality || '',
+                                                                    cityName: auction.cityName || '',
+                                                                    reservePrice: auction.reservePrice || '',
+                                                                    emdAmount: auction.emdAmount || '',
+                                                                    bidIncrement: auction.bidIncrement || '',
+                                                                    emdLastDate: auction.emdLastDate ? auction.emdLastDate.slice(0, 16) : '',
+                                                                    auctionDate: auction.auctionDate ? auction.auctionDate.slice(0, 16) : '',
+                                                                    auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
+                                                                    inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
+                                                                    bankContactDetails: auction.bankContactDetails || '',
+                                                                    possession: auction.possession || 'Symbolic',
+                                                                    noticeUrl: auction.noticeUrl || ''
+                                                                });
+                                                                setActiveTab('post-auction');
+                                                            }}
+                                                            className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"
+                                                        >
+                                                            <FileEdit className="w-3 h-3" /> Edit
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {allAuctions.filter(a => a.createdByEmail === user?.email).length === 0 && (
+                                                <tr>
+                                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
+                                                        You haven't posted any auctions yet.
+                                                        <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </main>
         </div>

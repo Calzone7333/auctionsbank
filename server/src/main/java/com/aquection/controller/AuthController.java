@@ -174,13 +174,13 @@ public class AuthController {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            String token = java.util.UUID.randomUUID().toString();
-            user.setResetPasswordToken(token);
-            user.setResetPasswordTokenExpiry(java.time.LocalDateTime.now().plusHours(24));
+            String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+            user.setResetPasswordToken(otp);
+            user.setResetPasswordTokenExpiry(java.time.LocalDateTime.now().plusMinutes(15));
             userRepository.save(user);
 
             try {
-                emailService.sendPasswordResetEmail(user.getEmail(), token);
+                emailService.sendPasswordResetEmail(user.getEmail(), otp);
             } catch (Exception e) {
                 e.printStackTrace();
                 return ResponseEntity.status(500).body("Error: Failed to send email.");
@@ -189,27 +189,33 @@ public class AuthController {
 
         // Always return success even if email not found to prevent email enumeration
         return ResponseEntity
-                .ok("If that email address is in our database, we will send you an email to reset your password.");
+                .ok("If that email address is in our database, we will send you an OTP to reset your password.");
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody java.util.Map<String, String> request) {
-        String token = request.get("token");
+        String email = request.get("email");
+        String otp = request.get("otp");
         String newPassword = request.get("password");
 
-        if (token == null || token.isEmpty() || newPassword == null || newPassword.isEmpty()) {
-            return ResponseEntity.badRequest().body("Error: Token and new password are required.");
+        if (email == null || email.isEmpty() || otp == null || otp.isEmpty() || newPassword == null
+                || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body("Error: Email, OTP, and new password are required.");
         }
 
-        Optional<User> userOptional = userRepository.findByResetPasswordToken(token);
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (!userOptional.isPresent()) {
-            return ResponseEntity.badRequest().body("Error: Invalid or expired reset token.");
+            return ResponseEntity.badRequest().body("Error: Invalid email or OTP.");
         }
 
         User user = userOptional.get();
+        if (user.getResetPasswordToken() == null || !user.getResetPasswordToken().equals(otp)) {
+            return ResponseEntity.badRequest().body("Error: Invalid OTP.");
+        }
+
         if (user.getResetPasswordTokenExpiry() == null
                 || user.getResetPasswordTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body("Error: Reset token has expired.");
+            return ResponseEntity.badRequest().body("Error: OTP has expired.");
         }
 
         user.setPasswordHash(encoder.encode(newPassword));
