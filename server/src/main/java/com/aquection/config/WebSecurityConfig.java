@@ -73,7 +73,11 @@ public class WebSecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:5174",
                 "http://localhost:3000",
-                "http://10.173.126.100:5173"));
+                "http://10.173.126.100:5173",
+                "https://madrasauction.com",
+                "http://madrasauction.com",
+                "https://www.madrasauction.com",
+                "http://www.madrasauction.com"));
         configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
         configuration.setAllowCredentials(true);
