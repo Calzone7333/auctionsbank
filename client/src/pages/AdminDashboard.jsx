@@ -19,7 +19,9 @@ import {
     FileEdit,
     ClipboardList,
     Bell,
-    Settings
+    Settings,
+    Sparkles,
+    Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -62,6 +64,96 @@ const AdminDashboard = () => {
         noticeUrl: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
+    const [autoFillText, setAutoFillText] = useState('');
+
+    const handleAutoFill = () => {
+        if (!autoFillText.trim()) return;
+
+        const data = { ...formData };
+
+        // Helper to extract using regex
+        const extract = (regex) => {
+            const match = autoFillText.match(regex);
+            return match ? match[1].trim() : null;
+        };
+
+        // Bank Name
+        const bank = extract(/Bank Name:\s*(.*)/i);
+        if (bank) data.bankName = bank;
+
+        // Borrower Name
+        const borrower = extract(/Borrower Name:\s*(.*)/i);
+        if (borrower) data.borrowerName = borrower;
+
+        // Property Type
+        const type = extract(/Property Type:\s*(.*)/i);
+        if (type) {
+            // Rough mapping
+            if (type.toLowerCase().includes('residential')) data.propertyType = 'House and Residential Plot';
+            else if (type.toLowerCase().includes('land')) data.propertyType = 'Land, Plot and Site';
+            else if (type.toLowerCase().includes('commercial')) data.propertyType = 'All Commercial';
+            else if (type.toLowerCase().includes('office')) data.propertyType = 'Office';
+        }
+
+        // Location
+        const location = extract(/Property Location:\s*(.*)/i);
+        if (location) {
+            data.location = location;
+            // Extract city (often the last part)
+            const parts = location.split(',');
+            if (parts.length > 0) {
+                const cityPart = parts[parts.length - 1].split('-')[0].trim();
+                data.cityName = cityPart;
+            }
+        }
+
+        // Area
+        const areaRes = extract(/Building Area.*:\s*(.*)/i) || extract(/Total Land Area:\s*(.*)/i) || extract(/Property Dimensions:\s*(.*)/i);
+        if (areaRes) data.area = areaRes;
+
+        // Reserve Price
+        const rp = extract(/Reserve Price:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        if (rp) data.reservePrice = rp.replace(/,/g, '');
+
+        // EMD Amount
+        const emd = extract(/EMD Amount.*:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        if (emd) data.emdAmount = emd.replace(/,/g, '');
+
+        // Bid Increment
+        const bi = extract(/Bid Increment:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        if (bi) data.bidIncrement = bi.replace(/,/g, '');
+
+        // Bank Contact
+        const contact = extract(/Bank Contact Details:\s*(.*)/i);
+        const email = extract(/Bank Email:\s*(.*)/i);
+        if (contact || email) {
+            data.bankContactDetails = `${contact || ''} ${email ? `| Email: ${email}` : ''}`.trim();
+        }
+
+        // Date Parsing (Rough)
+        // Format example: 17.03.2026 from 11:00 AM
+        const dateMatch = autoFillText.match(/Auction Date & Time:\s*(\d{2})[./](\d{2})[./](\d{4})/i);
+        const timeMatch = autoFillText.match(/(\d{1,2}:\d{2}\s*[APM]{2})/i);
+
+        if (dateMatch) {
+            const [_, d, m, y] = dateMatch;
+            let dateStr = `${y}-${m}-${d}`;
+            if (timeMatch) {
+                // Convert AM/PM to 24h
+                let [time, modifier] = timeMatch[1].split(' ');
+                let [hours, minutes] = time.split(':');
+                if (hours === '12') hours = '00';
+                if (modifier.toUpperCase() === 'PM') hours = parseInt(hours, 10) + 12;
+                dateStr += `T${hours.toString().padStart(2, '0')}:${minutes}`;
+            } else {
+                dateStr += `T10:00`; // Default
+            }
+            data.auctionDate = dateStr;
+        }
+
+        setFormData(data);
+        alert('Magic Auto-Fill completed! Please review the fields.');
+    };
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -395,230 +487,252 @@ const AdminDashboard = () => {
                                     </p>
                                 </div>
 
+                                {!editingAuctionId && (
+                                    <div className="bg-gradient-to-br from-brand-blue/5 to-white rounded-2xl shadow-sm border border-brand-blue/10 p-5 space-y-3">
+                                        <div className="flex items-center gap-2 text-brand-blue">
+                                            <Sparkles className="w-5 h-5 animate-pulse" />
+                                            <h3 className="text-sm font-black uppercase tracking-wider">Magic Auto-Fill</h3>
+                                        </div>
+                                        <p className="text-xs text-slate-500">Paste the auction detail text here and click auto-fill to instantly populate the form below.</p>
+                                        <textarea
+                                            className="w-full p-3 text-[13px] rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:border-brand-blue transition-all outline-none min-h-[100px]"
+                                            placeholder="Paste details here..."
+                                            value={autoFillText}
+                                            onChange={(e) => setAutoFillText(e.target.value)}
+                                        ></textarea>
+                                        <button
+                                            onClick={handleAutoFill}
+                                            className="flex items-center gap-2 px-6 py-2.5 bg-brand-blue text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-brand-dark transition-all shadow-lg shadow-brand-blue/20"
+                                        >
+                                            <Zap className="w-4 h-4" /> Start Magic Fill
+                                        </button>
+                                    </div>
+                                )}
+
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
-                                        <div className="space-y-4">
-                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-brand-blue" /> Property Information
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Borrower Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="borrowerName"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="Borrower Name"
-                                                        value={formData.borrowerName}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Property Type</label>
-                                                    <select
-                                                        name="propertyType"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.propertyType}
-                                                        onChange={handleFormChange}
-                                                    >
-                                                        <option value="Flat and Floor">Flat and Floor</option>
-                                                        <option value="House and Residential Plot">House and Residential Plot</option>
-                                                        <option value="Land, Plot and Site">Land, Plot and Site</option>
-                                                        <option value="All Commercial">All Commercial</option>
-                                                        <option value="Office">Office</option>
-                                                        <option value="Shop">Shop</option>
-                                                        <option value="Industrial Plots, Land & Sheds">Industrial Plots, Land & Sheds</option>
-                                                        <option value="Factory Land & buildings">Factory Land & buildings</option>
-                                                        <option value="Car">Car</option>
-                                                        <option value="Plant and Machinery">Plant and Machinery</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Possession Status</label>
-                                                    <select
-                                                        name="possession"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.possession}
-                                                        onChange={handleFormChange}
-                                                    >
-                                                        <option value="Symbolic">Symbolic Possession</option>
-                                                        <option value="Physical">Physical Possession</option>
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Download Auction File (Image/PDF)</label>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*,application/pdf"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        onChange={(e) => setSelectedFile(e.target.files[0])}
-                                                    />
-                                                    {formData.noticeUrl && !selectedFile && (
-                                                        <p className="text-xs text-brand-blue mt-1">
-                                                            Current file: <a href={formData.noticeUrl} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
-                                                        </p>
-                                                    )}
-                                                </div>
+                                    <form onSubmit={handleFormSubmit} className="p-6 space-y-8">
+                                        {/* Row 1: Borrower & Bank */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Borrower Name</label>
+                                                <input
+                                                    type="text"
+                                                    name="borrowerName"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="Enter borrower name"
+                                                    value={formData.borrowerName}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Name</label>
+                                                <input
+                                                    type="text"
+                                                    name="bankName"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="e.g., Punjab National Bank"
+                                                    value={formData.bankName}
+                                                    onChange={handleFormChange}
+                                                />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <MapPin className="w-4 h-4 text-emerald-500" /> Location & Bank Details
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="bankName"
-                                                        required
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="e.g., SBI"
-                                                        value={formData.bankName}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
-                                                    <input
-                                                        type="text"
-                                                        name="bankContactDetails"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="Officer Name & Phone"
-                                                        value={formData.bankContactDetails}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location</label>
-                                                    <input
-                                                        type="text"
-                                                        name="location"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="Specific street address or map location"
-                                                        value={formData.location}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Locality</label>
-                                                    <input
-                                                        type="text"
-                                                        name="locality"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="Locality / Area Name"
-                                                        value={formData.locality}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">City</label>
-                                                    <input
-                                                        type="text"
-                                                        name="cityName"
-                                                        required
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="e.g., Chennai"
-                                                        value={formData.cityName}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Area (Dimensions)</label>
-                                                    <input
-                                                        type="text"
-                                                        name="area"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="e.g., 1200 Sq.Ft"
-                                                        value={formData.area}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
+                                        {/* Row 2: Type & Description */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Property Type</label>
+                                                <select
+                                                    name="propertyType"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.propertyType}
+                                                    onChange={handleFormChange}
+                                                >
+                                                    <option value="Flat and Floor">Flat and Floor</option>
+                                                    <option value="House and Residential Plot">House and Residential Plot</option>
+                                                    <option value="Land, Plot and Site">Land, Plot and Site</option>
+                                                    <option value="All Commercial">All Commercial</option>
+                                                    <option value="Office">Office</option>
+                                                    <option value="Shop">Shop</option>
+                                                    <option value="Industrial Plots, Land & Sheds">Industrial Plots, Land & Sheds</option>
+                                                    <option value="Factory Land & buildings">Factory Land & buildings</option>
+                                                    <option value="Car">Car</option>
+                                                    <option value="Plant and Machinery">Plant and Machinery</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Description</label>
+                                                <input
+                                                    type="text"
+                                                    name="description"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="Brief property description"
+                                                    value={formData.description}
+                                                    onChange={handleFormChange}
+                                                />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <IndianRupee className="w-4 h-4 text-amber-500" /> Financials & Schedule
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Reserve Price (₹)</label>
-                                                    <input
-                                                        type="number"
-                                                        name="reservePrice"
-                                                        required
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="0.00"
-                                                        value={formData.reservePrice}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Amount (₹)</label>
-                                                    <input
-                                                        type="number"
-                                                        name="emdAmount"
-                                                        required
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="0.00"
-                                                        value={formData.emdAmount}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bid Increment (₹)</label>
-                                                    <input
-                                                        type="number"
-                                                        name="bidIncrement"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        placeholder="0.00"
-                                                        value={formData.bidIncrement}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Testing/EMD Submission Date</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        name="emdLastDate"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.emdLastDate}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction Start Date & Time</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        name="auctionDate"
-                                                        required
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.auctionDate}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction End Date & Time</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        name="auctionEndDate"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.auctionEndDate}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Inspection Date & Time</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        name="inspectionDate"
-                                                        className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                        value={formData.inspectionDate}
-                                                        onChange={handleFormChange}
-                                                    />
-                                                </div>
+                                        {/* Row 3: Location & Area */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location</label>
+                                                <input
+                                                    type="text"
+                                                    name="location"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="Full property address"
+                                                    value={formData.location}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Area (Dimensions)</label>
+                                                <input
+                                                    type="text"
+                                                    name="area"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="e.g., 2,327 Sq. Ft."
+                                                    value={formData.area}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Row 4: Possession & Locality */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Possession Status</label>
+                                                <select
+                                                    name="possession"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.possession}
+                                                    onChange={handleFormChange}
+                                                >
+                                                    <option value="Symbolic">Symbolic Possession</option>
+                                                    <option value="Physical">Physical Possession</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Locality</label>
+                                                <input
+                                                    type="text"
+                                                    name="locality"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="e.g., Sriperumbudur"
+                                                    value={formData.locality}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Row 5: City & Financials */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">City</label>
+                                                <input
+                                                    type="text"
+                                                    name="cityName"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="e.g., Chennai"
+                                                    value={formData.cityName}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Reserve Price (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    name="reservePrice"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="0.00"
+                                                    value={formData.reservePrice}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Amount (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    name="emdAmount"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="0.00"
+                                                    value={formData.emdAmount}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bid Increment (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    name="bidIncrement"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="0.00"
+                                                    value={formData.bidIncrement}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Row 6: Dates */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Submission Date</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    name="emdLastDate"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.emdLastDate}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction Start Date & Time</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    name="auctionDate"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.auctionDate}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Auction End Date & Time</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    name="auctionEndDate"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.auctionEndDate}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Row 7: Bank Contact & File */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
+                                                <input
+                                                    type="text"
+                                                    name="bankContactDetails"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="Officer Name & Phone"
+                                                    value={formData.bankContactDetails}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Download Auction File (Image/PDF)</label>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,application/pdf"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                                                />
+                                                {formData.noticeUrl && !selectedFile && (
+                                                    <p className="text-xs text-brand-blue mt-1">
+                                                        Current file: <a href={formData.noticeUrl} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 

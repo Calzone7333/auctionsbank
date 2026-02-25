@@ -14,13 +14,24 @@ const AuctionDetails = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [auction, setAuction] = useState(null);
+    const [similarAuctions, setSimilarAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
         fetch(`${API_BASE_URL}/auctions/${id}`)
             .then(res => res.json())
             .then(data => {
                 setAuction(data);
+                // After fetching main auction, fetch similar ones
+                fetch(`${API_BASE_URL}/auctions`)
+                    .then(res => res.json())
+                    .then(allAuctions => {
+                        const similar = allAuctions
+                            .filter(a => a.id !== data.id && (a.cityName === data.cityName || a.propertyType === data.propertyType))
+                            .slice(0, 5);
+                        setSimilarAuctions(similar);
+                    });
                 setLoading(false);
             })
             .catch(err => {
@@ -28,6 +39,27 @@ const AuctionDetails = () => {
                 setLoading(false);
             });
     }, [id]);
+
+    const handleShare = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: auction?.title,
+                text: `Check out this auction property: ${auction?.title}`,
+                url: window.location.href,
+            });
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+        }
+    };
+
+    const getCalendarLink = () => {
+        if (!auction) return '#';
+        const start = new Date(auction.auctionDate).toISOString().replace(/-|:|\.\d+/g, '');
+        const end = new Date(auction.auctionEndDate || auction.auctionDate).toISOString().replace(/-|:|\.\d+/g, '');
+        const details = `Property Auction: ${auction.title}\nBank: ${auction.bankName}\nReserve Price: ${auction.reservePrice}`;
+        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(auction.title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(auction.cityName)}&sf=true&output=xml`;
+    };
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -49,263 +81,183 @@ const AuctionDetails = () => {
         new Date(dateString).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
     return (
-        <div className="bg-[#f8f9fa] min-h-screen font-sans text-slate-800">
-            {/* Navigation Bar */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link to="/auctions" className="p-2 -ml-2 text-slate-400 hover:text-slate-700 hover:bg-gray-100 rounded-lg transition-all">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Link>
-                        <nav className="hidden sm:flex items-center text-sm font-medium text-slate-500">
-                            <Link to="/" className="hover:text-slate-900">Home</Link>
-                            <ChevronRight className="w-4 h-4 mx-2 text-slate-300" />
-                            <Link to="/auctions" className="hover:text-slate-900">Auctions</Link>
-                            <ChevronRight className="w-4 h-4 mx-2 text-slate-300" />
-                            <span className="text-slate-900 truncate max-w-[200px]">Property #{auction.id}</span>
-                        </nav>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all">
-                            <Printer className="w-4 h-4" /> Print
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all">
-                            <Share2 className="w-4 h-4" /> Share
-                        </button>
-                    </div>
-                </div>
-            </header>
+        <div className="bg-white min-h-screen font-sans text-slate-800">
+            <main className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 py-8">
+                {/* Breadcrumbs */}
+                <nav className="flex items-center text-[11px] text-slate-400 mb-4 font-bold uppercase tracking-wider">
+                    <Link to="/" className="hover:text-brand-blue">Home</Link>
+                    <ChevronRight className="w-3 h-3 mx-1 text-slate-300" />
+                    <Link to={`/auctions?city=${encodeURIComponent(auction.cityName)}`} className="hover:text-brand-blue">{auction.cityName}</Link>
+                    <ChevronRight className="w-3 h-3 mx-1 text-slate-300" />
+                    <span className="text-slate-500">{auction.bankName}</span>
+                </nav>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Title Header */}
-                <div className="mb-8">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                        <div className="space-y-3 max-w-4xl">
-                            <div className="flex flex-wrap gap-2">
-                                <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded uppercase tracking-wide">
-                                    {auction.propertyType}
-                                </span>
-                                <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold rounded uppercase tracking-wide flex items-center gap-1">
-                                    <ShieldCheck className="w-3 h-3" /> Verfied Notice
-                                </span>
-                            </div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">
-                                {auction.title}
-                            </h1>
-                            <div className="flex items-center text-slate-500 text-sm">
-                                <MapPin className="w-4 h-4 mr-1.5 text-slate-400" />
-                                {auction.cityName}, India
-                                <span className="mx-2 text-slate-300">|</span>
-                                <Building2 className="w-4 h-4 mr-1.5 text-slate-400" />
-                                {auction.bankName}
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <p className="text-sm font-medium text-slate-500 mb-1">Reserve Price</p>
-                            <p className="text-3xl font-bold text-slate-900">{formatCurrency(auction.reservePrice)}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Content */}
-                    <div className="lg:col-span-2 space-y-8">
-
-                        {/* Image Placeholder */}
-                        <div className="aspect-video bg-slate-100 rounded-xl border border-gray-200 flex items-center justify-center relative overflow-hidden group shadow-sm">
-                            <Building2 className="w-16 h-16 text-slate-300" />
-                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="text-sm font-medium text-slate-600 bg-white px-3 py-1.5 rounded shadow-sm">Preview only</span>
-                            </div>
-                        </div>
-
-                        {/* Property Specifications Grid */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <Home className="w-4 h-4 text-slate-500" /> Property Specifications
-                                </h3>
-                            </div>
-                            <div className="p-6">
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <Ruler className="w-3 h-3 mr-1" /> Area
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.area}</span>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Left & Center Column: Main Content */}
+                    <div className="lg:col-span-3 space-y-6">
+                        {/* Title & Price Header */}
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div className="space-y-1">
+                                <h1 className="text-xl md:text-2xl font-bold text-slate-800 leading-tight">
+                                    {auction.title || `Property in ${auction.locality}, ${auction.cityName}`}
+                                </h1>
+                                <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
+                                    <div className="p-1 bg-brand-blue/10 rounded">
+                                        <Building2 className="w-4 h-4 text-brand-blue" />
                                     </div>
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <Compass className="w-3 h-3 mr-1" /> Facing
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.facing}</span>
-                                    </div>
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <Layers className="w-3 h-3 mr-1" /> Ownership
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.type}</span>
-                                    </div>
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <ShieldCheck className="w-3 h-3 mr-1" /> Possession
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.possession}</span>
-                                    </div>
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <Building2 className="w-3 h-3 mr-1" /> Type
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.propertyType}</span>
-                                    </div>
-                                    <div>
-                                        <span className="flex items-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                            <MapPin className="w-3 h-3 mr-1" /> City
-                                        </span>
-                                        <span className="text-sm font-medium text-slate-900 block">{auction.cityName}</span>
-                                    </div>
+                                    <span className="text-brand-blue">{auction.bankName}</span>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Auction Details Grid */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-slate-500" /> Auction Schedule & Rules
-                                </h3>
-                            </div>
-                            <div className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">Auction Date</span>
-                                        <span className="text-sm font-bold text-slate-900">{formatDate(auction.auctionDate)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">Inspection Date (Tentative)</span>
-                                        <span className={`text-sm font-medium text-slate-900 ${!user?.isPremium && 'blur-sm select-none'}`}>{formatDate(auction.inspectionDate)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">EMD Amount</span>
-                                        <span className="text-sm font-bold text-slate-900">{formatCurrency(auction.emdAmount)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">Last Date for EMD</span>
-                                        <span className={`text-sm font-medium text-slate-900 font-mono ${!user?.isPremium && 'blur-sm select-none'}`}>{formatDate(auction.emdLastDate)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">Reserve Price</span>
-                                        <span className="text-sm font-bold text-slate-900">{formatCurrency(auction.reservePrice)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm text-slate-500">Bid Multiplier</span>
-                                        <span className={`text-sm font-medium text-slate-900 ${!user?.isPremium && 'blur-sm select-none'}`}>{formatCurrency(auction.bidIncrement)}</span>
-                                    </div>
-                                </div>
-                                <div className="mt-6 bg-amber-50 rounded-lg p-4 border border-amber-100 flex gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-xs font-bold text-amber-800 uppercase mb-1">Important Notice</p>
-                                        <p className="text-xs text-amber-900 leading-relaxed">
-                                            The sale shall be subject to the conditions prescribed in the Security Interest (Enforcement) Rules 2002. Detailed terms and conditions are available in the official tender document.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Description Card */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-slate-500" /> Full Description
-                                </h3>
-                            </div>
-                            <div className="p-6">
-                                <div className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-600 whitespace-pre-line">
-                                    <p>
-                                        {auction.description || "The authorized officer of the bank has taken possession of the schedule property under the SARFAESI Act.\n\n This prime property is now available for auction. We recommend interested buyers to physically inspect the property before participating in the bidding process. The property is being sold on an 'As is where is', 'As is what is', and 'Whatever there is' basis.\n\nOutstanding dues if any, such as electricity, water, and property tax must be verified by the bidder."}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Sidebar */}
-                    <div className="space-y-6">
-
-                        {/* Action Card */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24 overflow-hidden group">
-
-                            {!user?.isPremium && (
-                                <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[2px] flex items-center justify-center p-6 text-center">
-                                    <div className="space-y-4">
-                                        <div className="w-16 h-16 bg-aq-gold/10 rounded-full flex items-center justify-center mx-auto">
-                                            <Lock className="w-8 h-8 text-aq-gold" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-900">Premium Content</h3>
-                                        <p className="text-sm text-slate-500 max-w-[200px] mx-auto">
-                                            Official notice downloads and contact details are available for premium members only.
-                                        </p>
-                                        <Link
-                                            to="/plans"
-                                            className="inline-flex items-center gap-2 bg-aq-gold hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold text-sm shadow-lg shadow-aq-gold/20 transition-all transform hover:-translate-y-1"
-                                        >
-                                            <Sparkles className="w-4 h-4" /> Upgrade Now
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mb-6 pb-6 border-b border-gray-100">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Official Actions</h3>
-                                <div className="space-y-3">
-                                    <a
-                                        href={auction.noticeUrl || "#"}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex w-full items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-3 rounded-lg font-semibold text-sm transition-all"
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="flex items-center gap-3">
+                                    <p className="text-2xl font-black text-emerald-600 tracking-tighter">{formatCurrency(auction.reservePrice)}</p>
+                                    <button
+                                        onClick={handleShare}
+                                        className="p-2.5 text-slate-400 hover:text-brand-blue hover:bg-slate-50 rounded-full transition-all"
                                     >
-                                        <Download className="w-4 h-4" /> Download Notice
-                                    </a>
-                                    <button className="flex w-full items-center justify-center gap-2 bg-white hover:bg-gray-50 text-slate-700 border border-gray-200 px-4 py-3 rounded-lg font-semibold text-sm transition-all">
-                                        <ExternalLink className="w-4 h-4" /> E-Auction Portal
+                                        <Share2 className="w-5 h-5" />
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Contact Officer</h3>
-                                <div className="flex items-start gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
-                                        {auction.contactOfficer ? auction.contactOfficer.split(' ').slice(0, 2).map(n => n[0]).join('') : 'BK'}
+                        {/* Image Section - Only shown if an image is actually uploaded */}
+                        {auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                            <div className="space-y-4">
+                                <div className="relative rounded-lg overflow-hidden border border-slate-100 shadow-sm">
+                                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                                        <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm">Front View</span>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-900">{auction.contactOfficer}</p>
-                                        <p className="text-xs text-slate-500">Authorized Officer</p>
+                                    <img
+                                        src={auction.noticeUrl}
+                                        alt="Property Front View"
+                                        className="w-full aspect-[16/7] object-cover"
+                                    />
+                                </div>
+                                {/* Thumbnails */}
+                                <div className="flex gap-2">
+                                    <div className="w-20 h-20 rounded-md border-2 border-brand-blue overflow-hidden cursor-pointer">
+                                        <img src={auction.noticeUrl} className="w-full h-full object-cover" alt="tab" />
                                     </div>
                                 </div>
-                                <button className="w-full flex items-center justify-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm font-medium transition-all">
-                                    <Phone className="w-4 h-4" /> View Phone Number
-                                </button>
+                            </div>
+                        )}
+
+                        {/* Tabs */}
+                        <div className="border-b border-slate-200">
+                            <div className="flex gap-8">
+                                <button className="pb-3 text-sm font-bold text-brand-dark border-b-2 border-brand-dark">Description</button>
+                                <button className="pb-3 text-sm font-medium text-slate-400 hover:text-slate-600">Auction History</button>
+                            </div>
+                        </div>
+
+                        {/* Details Grid - Matching Screenshot style */}
+                        <div className="space-y-4 pt-2">
+                            {[
+                                { label: 'Borrower Name', value: auction.borrowerName },
+                                { label: 'Bank Name', value: auction.bankName, isLink: true },
+                                { label: 'Property Type', value: auction.propertyType },
+                                { label: 'Description', value: auction.description || `Individual House for Sale in ${auction.cityName}` },
+                                { label: 'Location', value: auction.location },
+                                { label: 'Area', value: auction.area },
+                                { label: 'Possession', value: auction.possession },
+                                { label: 'Locality', value: auction.locality },
+                                { label: 'City', value: auction.cityName },
+                                { label: 'Reserve Price', value: formatCurrency(auction.reservePrice), isBold: true },
+                                { label: 'Emd Amount', value: formatCurrency(auction.emdAmount) },
+                                { label: 'Bid Increment', value: formatCurrency(auction.bidIncrement) },
+                                { label: 'EMD submission', value: formatDate(auction.emdLastDate) },
+                                { label: 'Auction Start Date & Time', value: formatDate(auction.auctionDate), subValue: 'Add To Calendar' },
+                                { label: 'Auction End Date & Time', value: formatDate(auction.auctionEndDate) },
+                                { label: 'Bank Contact Details', value: auction.bankContactDetails },
+                            ].map((item, idx) => (
+                                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 py-1 min-h-[32px] items-start">
+                                    <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">{item.label}</span>
+                                    <div className="md:col-span-2 space-y-1">
+                                        <p className={`text-[13px] ${item.isLink ? 'text-blue-500 font-bold hover:underline cursor-pointer' : 'text-slate-600'} ${item.isBold ? 'font-bold' : ''}`}>
+                                            {item.value || 'N/A'}
+                                        </p>
+                                        {item.subValue && (
+                                            <a
+                                                href={getCalendarLink()}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-[11px] text-blue-500 font-bold hover:underline block mt-1"
+                                            >
+                                                {item.subValue}
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Auction File */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 py-4 items-start">
+                                <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">Download Auction File</span>
+                                <div className="md:col-span-2">
+                                    {auction.noticeUrl ? (
+                                        <a
+                                            href={auction.noticeUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex flex-col items-center w-fit group"
+                                        >
+                                            <div className="p-3 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                                                <FileText className="w-8 h-8 text-red-500" />
+                                            </div>
+                                            <span className="text-[10px] text-blue-500 mt-2 text-center max-w-[80px] leading-tight">
+                                                {auction.title || 'Auction Notice'}.pdf
+                                            </span>
+                                        </a>
+                                    ) : (
+                                        <span className="text-[13px] text-slate-400 italic">No file available</span>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="pt-6 border-t border-gray-100">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Documents Available</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex items-center gap-2 text-xs text-slate-600">
-                                        <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> Sale Notice
-                                    </li>
-                                    <li className="flex items-center gap-2 text-xs text-slate-600">
-                                        <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> Tender Document
-                                    </li>
-                                    <li className="flex items-center gap-2 text-xs text-slate-600">
-                                        <FileCheck className="w-3.5 h-3.5 text-slate-300" /> Title Deed (On Request)
-                                    </li>
-                                    <li className="flex items-center gap-2 text-xs text-slate-600">
-                                        <FileCheck className="w-3.5 h-3.5 text-slate-300" /> Encumbrance Cert (On Request)
-                                    </li>
-                                </ul>
+                            {/* Feedback */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 py-4 border-t border-slate-100">
+                                <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">Feedback</span>
+                                <button className="text-[11px] text-blue-500 hover:underline text-left">Report inaccuracy</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="lg:col-span-1 space-y-8">
+                        {/* Share Card */}
+                        <div className="bg-white border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="bg-brand-dark text-white px-4 py-2">
+                                <h3 className="text-sm font-bold uppercase">Share</h3>
+                            </div>
+                            <div className="p-4 flex gap-3">
+                                <a href={`tel:${auction.bankContactDetails}`} className="p-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-brand-blue transition-colors"><Phone className="w-4 h-4" /></a>
+                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(auction.location + ' ' + auction.cityName)}`} target="_blank" rel="noreferrer" className="p-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-brand-blue transition-colors"><MapPin className="w-4 h-4" /></a>
+                                <a href={`mailto:?subject=${encodeURIComponent('Auction Property: ' + auction.title)}&body=${encodeURIComponent('Check this out: ' + window.location.href)}`} className="p-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-brand-blue transition-colors"><Mail className="w-4 h-4" /></a>
+                                <button onClick={handleShare} className="p-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-brand-blue transition-colors"><Share2 className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+
+                        {/* Similar Auctions */}
+                        <div className="bg-white border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="bg-brand-dark text-white px-4 py-2">
+                                <h3 className="text-sm font-bold uppercase tracking-tight">Similar Auction Properties</h3>
+                            </div>
+                            <div className="divide-y divide-slate-100">
+                                {similarAuctions.length > 0 ? similarAuctions.map((sim, i) => (
+                                    <Link key={sim.id} to={`/auctions/${sim.id}`} className="p-4 block space-y-1 hover:bg-slate-50 transition-colors group">
+                                        <h4 className="text-[12px] font-bold text-blue-500 line-clamp-2 leading-snug group-hover:underline">
+                                            {sim.title}
+                                        </h4>
+                                        <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                                            <Building2 className="w-3 h-3" />
+                                            <span>{sim.bankName}</span>
+                                        </div>
+                                        <p className="text-[12px] font-extrabold text-emerald-600">{formatCurrency(sim.reservePrice)}</p>
+                                    </Link>
+                                )) : (
+                                    <p className="p-4 text-[12px] text-slate-400 italic">No similar properties found.</p>
+                                )}
                             </div>
                         </div>
                     </div>

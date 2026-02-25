@@ -26,24 +26,26 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
     if (viewMode === 'list') {
         const isImage = auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiHost = isLocal ? 'http://localhost:8083' : 'https://madrasauction.com/api'; // Adjust based on your server structure
-        const imageUrl = isImage ? (auction.noticeUrl.startsWith('http') ? auction.noticeUrl : `${apiHost}${auction.noticeUrl}`) : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
+        const apiHost = isLocal ? 'http://localhost:8083' : 'https://madrasauction.com/api';
+        const imageUrl = isImage ? (auction.noticeUrl.startsWith('http') ? auction.noticeUrl : `${apiHost}${auction.noticeUrl}`) : null;
 
         return (
             <div className="flex flex-col sm:flex-row gap-6 py-6 px-6 border-b border-slate-100 bg-white hover:bg-slate-50/50 transition-all duration-300">
-                {/* Image Section */}
-                <div className="w-full sm:w-[260px] h-[160px] flex-shrink-0 relative group">
-                    <img
-                        src={imageUrl}
-                        alt={auction.title}
-                        className="w-full h-full object-cover rounded-md shadow-sm border border-slate-200"
-                    />
-                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1 rounded border border-slate-200">
-                        <div className="w-4 h-4 rounded-sm bg-brand-blue/10 flex items-center justify-center">
-                            <Building2 className="w-2.5 h-2.5 text-brand-blue" />
+                {/* Image Section - Only shown if uploaded */}
+                {isImage && (
+                    <div className="w-full sm:w-[260px] h-[160px] flex-shrink-0 relative group">
+                        <img
+                            src={imageUrl}
+                            alt={auction.title}
+                            className="w-full h-full object-cover rounded-md shadow-sm border border-slate-200"
+                        />
+                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1 rounded border border-slate-200">
+                            <div className="w-4 h-4 rounded-sm bg-brand-blue/10 flex items-center justify-center">
+                                <Building2 className="w-2.5 h-2.5 text-brand-blue" />
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Content Section */}
                 <div className="flex-1 min-w-0 flex flex-col sm:flex-row justify-between gap-6">
