@@ -15,6 +15,7 @@ import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
 import AdminDashboard from './pages/AdminDashboard';
 import VerifyEmail from './pages/VerifyEmail';
+import ResetPassword from './pages/ResetPassword';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
 import { Navigate } from 'react-router-dom';
@@ -53,6 +54,7 @@ const AppContent = () => {
           }
         />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
       {!shouldHide && <Footer />}
     </div>

@@ -81,8 +81,38 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const forgotPassword = async (email) => {
+        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Failed to send reset email');
+        }
+
+        return await response.text();
+    };
+
+    const resetPassword = async (token, password) => {
+        const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Failed to reset password');
+        }
+
+        return await response.text();
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, googleLogin, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, googleLogin, forgotPassword, resetPassword, loading }}>
             {children}
         </AuthContext.Provider>
     );

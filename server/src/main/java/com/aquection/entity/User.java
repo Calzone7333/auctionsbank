@@ -44,6 +44,10 @@ public class User {
 
     private String emailVerificationToken;
 
+    private String resetPasswordToken;
+
+    private java.time.LocalDateTime resetPasswordTokenExpiry;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

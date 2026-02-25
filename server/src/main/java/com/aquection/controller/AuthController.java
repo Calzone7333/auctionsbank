@@ -163,4 +163,60 @@ public class AuthController {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody java.util.Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Error: Email is required.");
+        }
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String token = java.util.UUID.randomUUID().toString();
+            user.setResetPasswordToken(token);
+            user.setResetPasswordTokenExpiry(java.time.LocalDateTime.now().plusHours(24));
+            userRepository.save(user);
+
+            try {
+                emailService.sendPasswordResetEmail(user.getEmail(), token);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(500).body("Error: Failed to send email.");
+            }
+        }
+
+        // Always return success even if email not found to prevent email enumeration
+        return ResponseEntity
+                .ok("If that email address is in our database, we will send you an email to reset your password.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody java.util.Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+
+        if (token == null || token.isEmpty() || newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body("Error: Token and new password are required.");
+        }
+
+        Optional<User> userOptional = userRepository.findByResetPasswordToken(token);
+        if (!userOptional.isPresent()) {
+            return ResponseEntity.badRequest().body("Error: Invalid or expired reset token.");
+        }
+
+        User user = userOptional.get();
+        if (user.getResetPasswordTokenExpiry() == null
+                || user.getResetPasswordTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Error: Reset token has expired.");
+        }
+
+        user.setPasswordHash(encoder.encode(newPassword));
+        user.setResetPasswordToken(null);
+        user.setResetPasswordTokenExpiry(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Password has been reset successfully.");
+    }
 }

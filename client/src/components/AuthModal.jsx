@@ -6,20 +6,22 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
-    const [mode, setMode] = useState(initialMode); // 'login' | 'register'
+    const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login, register, googleLogin, user: currentUser } = useAuth();
+    const { login, register, googleLogin, forgotPassword, user: currentUser } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
             setMode(initialMode);
             setError('');
+            setSuccessMessage('');
             // Reset fields
             setEmail('');
             setPassword('');
@@ -31,6 +33,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
         setLoading(true);
         try {
             if (mode === 'login') {
@@ -40,11 +43,15 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 } else {
                     navigate('/');
                 }
+                onClose();
+            } else if (mode === 'forgot') {
+                const message = await forgotPassword(email);
+                setSuccessMessage(message || 'Password reset link sent to your email.');
             } else {
                 await register(name, email, password);
                 navigate('/');
+                onClose();
             }
-            onClose();
         } catch (err) {
             setError(err.message || 'Authentication failed. Please try again.');
         } finally {
@@ -160,12 +167,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 >
                                     <span className="text-brand-blue font-black tracking-[0.4em] uppercase text-[8px] mb-2 block">Authentication</span>
                                     <h3 className="text-2xl font-display font-black text-brand-dark mb-1 uppercase tracking-tight">
-                                        {mode === 'login' ? 'Sign In' : 'Create Account'}
+                                        {mode === 'login' ? 'Sign In' : mode === 'forgot' ? 'Reset Password' : 'Create Account'}
                                     </h3>
                                     <p className="text-slate-400 text-[11px] font-medium">
                                         {mode === 'login'
                                             ? 'Enter your credentials to access.'
-                                            : 'Join our smart property community.'}
+                                            : mode === 'forgot'
+                                                ? 'Enter your email to receive a reset link.'
+                                                : 'Join our smart property community.'}
                                     </p>
                                 </motion.div>
                             </AnimatePresence>
@@ -180,6 +189,19 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 <div className="flex items-center gap-2">
                                     <X className="w-3 h-3 shrink-0" />
                                     {error}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {successMessage && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="mb-4 p-2 bg-green-50 text-green-700 rounded-md text-[9px] font-black uppercase tracking-widest border-l-4 border-green-500 shadow-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-3 h-3 shrink-0" />
+                                    {successMessage}
                                 </div>
                             </motion.div>
                         )}
@@ -217,25 +239,33 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center px-1">
-                                    <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest">Password</label>
-                                    {mode === 'login' && (
-                                        <button type="button" className="text-[9px] font-black text-brand-blue hover:text-brand-dark uppercase tracking-widest transition-colors">Forgot Password?</button>
-                                    )}
+                            {mode !== 'forgot' && (
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-[10px] font-black text-brand-dark uppercase tracking-widest">Password</label>
+                                        {mode === 'login' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('forgot')}
+                                                className="text-[9px] font-black text-brand-blue hover:text-brand-dark uppercase tracking-widest transition-colors"
+                                            >
+                                                Forgot Password?
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="relative group">
+                                        <input
+                                            type="password"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="••••••••"
+                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
+                                        />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
+                                    </div>
                                 </div>
-                                <div className="relative group">
-                                    <input
-                                        type="password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-md focus:outline-none focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue transition-all text-xs font-bold text-brand-dark placeholder-slate-300"
-                                    />
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-brand-blue transition-colors" />
-                                </div>
-                            </div>
+                            )}
 
                             <button
                                 type="submit"
@@ -249,7 +279,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                     </span>
                                 ) : (
                                     <>
-                                        {mode === 'login' ? 'Sign In Now' : 'Create My Account'}
+                                        {mode === 'login' ? 'Sign In Now' : mode === 'forgot' ? 'Send Reset Link' : 'Create My Account'}
                                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
                                     </>
                                 )}
@@ -295,10 +325,15 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                 {mode === 'login' ? "New to Madrasauction?" : "Already a member?"}
                                 <button
-                                    onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                                    type="button"
+                                    onClick={() => {
+                                        setMode(mode === 'register' ? 'login' : 'register');
+                                        setSuccessMessage('');
+                                        setError('');
+                                    }}
                                     className="ml-2 text-brand-blue font-black hover:text-brand-dark transition-all underline decoration-2 underline-offset-4"
                                 >
-                                    {mode === 'login' ? 'Register' : 'Sign In'}
+                                    {mode === 'register' ? 'Sign In' : 'Register'}
                                 </button>
                             </p>
                         </div>
