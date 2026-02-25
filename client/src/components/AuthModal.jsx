@@ -3,6 +3,7 @@ import { X, Mail, Lock, User as UserIcon, ArrowRight, Gavel, CheckCircle2, Phone
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const [mode, setMode] = useState(initialMode); // 'login' | 'register'
@@ -13,7 +14,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login, register, user: currentUser } = useAuth();
+    const { login, register, googleLogin, user: currentUser } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
@@ -49,6 +50,27 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setLoading(true);
+            const data = await googleLogin(credentialResponse.credential);
+            if (data?.role === 'ADMIN') {
+                navigate('/admin-dashboard');
+            } else {
+                navigate('/');
+            }
+            onClose();
+        } catch (err) {
+            setError(err.message || 'Google Auth failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleError = () => {
+        setError('Google Login Failed');
     };
 
     if (!isOpen) return null;
@@ -233,6 +255,41 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 )}
                             </button>
                         </form>
+
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-slate-100"></span>
+                            </div>
+                            <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <span className="px-2 bg-white">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center -mt-2">
+                            <div className="relative w-12 h-12 rounded-full shadow-sm flex items-center justify-center bg-white border border-slate-100 cursor-pointer overflow-hidden hover:shadow-md transition-all">
+                                {/* Visually display the exact G icon you asked for */}
+                                <svg viewBox="0 0 24 24" width="22" height="22" className="pointer-events-none z-10">
+                                    <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+                                        <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.449 L -8.284 53.449 C -8.574 54.809 -9.414 55.939 -10.604 56.739 L -10.604 59.489 L -6.744 59.489 C -4.484 57.399 -3.264 54.739 -3.264 51.509 Z" />
+                                        <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.744 59.489 L -10.604 56.739 C -11.724 57.489 -13.144 57.939 -14.754 57.939 C -17.864 57.939 -20.504 55.839 -21.434 53.009 L -25.464 53.009 L -25.464 55.839 C -23.474 59.809 -19.464 63.239 -14.754 63.239 Z" />
+                                        <path fill="#FBBC05" d="M -21.434 53.009 C -21.674 52.289 -21.804 51.509 -21.804 50.739 C -21.804 49.969 -21.674 49.189 -21.434 48.469 L -21.434 45.639 L -25.464 45.639 C -26.284 47.259 -26.754 48.969 -26.754 50.739 C -26.754 52.509 -26.284 54.219 -25.464 55.839 L -21.434 53.009 Z" />
+                                        <path fill="#EA4335" d="M -14.754 43.539 C -12.984 43.539 -11.404 44.149 -10.154 45.349 L -6.654 41.849 C -8.814 39.839 -11.524 38.239 -14.754 38.239 C -19.464 38.239 -23.474 41.669 -25.464 45.639 L -21.434 48.469 C -20.504 45.639 -17.864 43.539 -14.754 43.539 Z" />
+                                    </g>
+                                </svg>
+
+                                {/* Invisibly place the real functional Google button right over it to capture clicks */}
+                                <div className="absolute inset-0 z-20 w-full h-full opacity-[0.01] flex items-center justify-center">
+                                    <div className="scale-[1.5]">
+                                        <GoogleLogin
+                                            onSuccess={handleGoogleSuccess}
+                                            onError={handleGoogleError}
+                                            type="icon"
+                                            shape="circle"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className="mt-6 pt-6 border-t border-slate-50 text-center">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
