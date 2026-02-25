@@ -29,17 +29,17 @@ const TabContent = ({ activeTab }) => {
     const content = {
         'knowledge': {
             title: 'Market Expertise',
-            image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2084&auto=format&fit=crop',
+            image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070&auto=format&fit=crop',
             desc: 'Our team specializes in the intricate world of bank auctions, providing you with data-driven insights and verified opportunities for high-yield investments.'
         },
         'excellence': {
             title: 'Verified Opportunities',
-            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop',
+            image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
             desc: 'We pride ourselves on our rigorous vetting process. Every auction on our platform is sourced from reputable financial institutions and legal channels.'
         },
         'pricing': {
             title: 'Transparent Process',
-            image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1911&auto=format&fit=crop',
+            image: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop',
             desc: 'Real estate investment shouldn\'t be a mystery. We provide clear pricing, EMD details, and legal documentation to ensure a seamless transparent journey.'
         }
     };
@@ -93,10 +93,10 @@ const HomePage = () => {
     }, []);
 
     const stats = [
-        { icon: Globe, label: 'Cities Covered', value: '45+' },
-        { icon: Users, label: 'Happy Investors', value: '12k+' },
-        { icon: MapPin, label: 'Success Rate', value: '94%' },
-        { icon: Award, label: 'Expert Support', value: '24/7' },
+        { icon: Home, label: 'Properties Listed', value: '10K+' },
+        { icon: ShieldCheck, label: 'Secure Transactions', value: '100%' },
+        { icon: Users, label: 'Happy Clients', value: '12K+' },
+        { icon: Clock, label: 'Support Available', value: '24/7' },
     ];
 
     return (
@@ -107,8 +107,12 @@ const HomePage = () => {
             <section className="relative z-20 -mt-16 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-24">
                 <div className="flex justify-between items-end mb-8 px-2">
                     <div className="space-y-1">
-                        <span className="text-brand-blue font-black tracking-[0.3em] uppercase text-[10px]">New Opportunities</span>
-                        <h2 className="text-3xl font-display font-black text-brand-dark uppercase tracking-tight">Recent Auctions</h2>
+                        <span className="block text-brand-blue font-black tracking-[0.3em] uppercase text-[10px]">New Opportunities</span>
+                        <div className="relative inline-block mt-1">
+                            <h2 className="text-3xl font-display font-black text-brand-dark uppercase tracking-tight relative z-10">Recent Auctions</h2>
+                            <div className="absolute w-44 h-2.5 bg-brand-blue/30 -bottom-1 left-1/2 transform -translate-x-1/2 -rotate-2 z-0 rounded-full"></div>
+                            <div className="absolute w-36 h-1.5 bg-brand-blue/20 -bottom-3 left-1/2 transform -translate-x-1/2 rotate-1 z-0 rounded-full"></div>
+                        </div>
                     </div>
                     <Link to="/auctions" className="text-brand-blue font-black uppercase text-[10px] tracking-widest hover:text-brand-dark transition-colors flex items-center gap-2 border-b-2 border-brand-blue pb-1">
                         View All Listings <ArrowRight className="w-3 h-3" />
@@ -141,7 +145,11 @@ const HomePage = () => {
             <section className="py-24 bg-white overflow-hidden">
                 <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl font-display font-bold text-brand-dark mb-8 uppercase tracking-tight">Why Choose Madrasauction?</h2>
+                        <div className="relative inline-block mb-8">
+                            <h2 className="text-4xl font-display font-bold text-brand-dark uppercase tracking-tight relative z-10">Why Choose Madrasauction?</h2>
+                            <div className="absolute w-80 h-3 bg-brand-blue/30 -bottom-2 left-1/2 transform -translate-x-1/2 -rotate-1 z-0 rounded-full"></div>
+                            <div className="absolute w-64 h-2 bg-brand-blue/20 -bottom-4 left-1/2 transform -translate-x-1/2 rotate-1 z-0 rounded-full"></div>
+                        </div>
                         <div className="flex justify-center items-center gap-8 md:gap-16 border-b border-slate-100 pb-4">
                             {[
                                 { id: 'knowledge', label: 'Market Expertise' },
@@ -177,29 +185,33 @@ const HomePage = () => {
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <div>
-                            <h2 className="text-4xl md:text-5xl font-display font-bold text-brand-dark mb-6 leading-tight uppercase tracking-tight">
-                                Investment Portal With a Difference. <br />
-                                <span className="text-brand-blue italic">Innovation.</span>
-                            </h2>
+                            <div className="relative inline-block mb-6">
+                                <h2 className="text-4xl md:text-5xl font-display font-bold text-brand-dark leading-tight uppercase tracking-tight relative z-10">
+                                    A Modern Digital Bidding Experience. <br />
+                                    <span className="text-brand-blue italic">Advanced Platform.</span>
+                                </h2>
+                                <div className="absolute w-56 h-3 bg-brand-blue/30 -bottom-2 left-0 transform -rotate-2 z-0 rounded-full mt-2"></div>
+                                <div className="absolute w-48 h-2 bg-brand-blue/20 -bottom-4 left-4 transform rotate-1 z-0 rounded-full mt-2"></div>
+                            </div>
                             <p className="text-slate-600 mb-8 text-lg leading-relaxed">
-                                Madrasauction Property Auctions is localized as one of the leader's groups in the bank auction and real estate investment services. We continue to expand our horizons by providing innovative digital solutions supported by deep legal expertise.
+                                Madrasauction offers a state-of-the-art secure digital portal designed specifically for bank auctions. Explore detailed property analytics, automate your document tracking, and bid confidently using our robust, transparent technology.
                             </p>
                             <div className="space-y-2">
-                                <h4 className="font-bold text-brand-dark uppercase tracking-wider">Our Commitment</h4>
-                                <p className="text-slate-400 text-sm italic">Excellence in every bid.</p>
+                                <h4 className="font-bold text-brand-dark uppercase tracking-wider">Features</h4>
+                                <p className="text-slate-400 text-sm italic">Smart tools for smart investors.</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {[
                                 {
-                                    title: 'Asset Portfolio',
-                                    img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop',
-                                    desc: "Explore a vast portfolio of residential and commercial assets from leading banks."
+                                    title: 'Live Analytics Dashboard',
+                                    img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop',
+                                    desc: "Track real-time auction statuses, reserve prices, and compare historical bidding trends instantly."
                                 },
                                 {
-                                    title: 'Strategic Insights',
-                                    img: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=2070&auto=format&fit=crop',
-                                    desc: "Get professional analysis on market valuation and future growth potential."
+                                    title: 'Secure Document Vault',
+                                    img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2070&auto=format&fit=crop',
+                                    desc: "Access digital copies of sale notices, title deeds, and essential legal documents in one click."
                                 }
                             ].map((item, idx) => (
                                 <div key={idx} className="bg-white rounded-2xl shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-300">
@@ -229,10 +241,14 @@ const HomePage = () => {
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
                         <div className="lg:col-span-1">
-                            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-8 leading-[1.2] uppercase tracking-tight">
-                                Expert Help. <br />
-                                <span className="text-brand-light/40">High Returns.</span>
-                            </h2>
+                            <div className="relative inline-block mb-8">
+                                <h2 className="text-4xl md:text-5xl font-display font-bold text-white leading-[1.2] uppercase tracking-tight relative z-10">
+                                    Expert Help. <br />
+                                    <span className="text-brand-light/40">High Returns.</span>
+                                </h2>
+                                <div className="absolute w-52 h-3 bg-brand-blue/40 -bottom-2 left-0 transform -rotate-1 z-0 rounded-full mt-2"></div>
+                                <div className="absolute w-40 h-2 bg-brand-blue/30 -bottom-4 left-4 transform rotate-2 z-0 rounded-full mt-2"></div>
+                            </div>
                             <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-brand-blue transition-colors cursor-pointer group">
                                 <Plus size={24} className="group-hover:rotate-90 transition-transform" />
                             </div>
@@ -265,11 +281,24 @@ const HomePage = () => {
             <section className="py-24 bg-white">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div className="grid grid-cols-2 gap-x-12 gap-y-16">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {stats.map((stat, idx) => (
-                                <div key={idx} className="space-y-2">
-                                    <span className="text-5xl font-bold text-brand-dark">{stat.value}</span>
-                                    <p className="text-slate-400 text-[10px] uppercase tracking-[0.3em] font-black">{stat.label}</p>
+                                <div key={idx} className="flex flex-col items-center text-center px-4 mb-8">
+                                    <div className="w-24 h-24 mb-6 relative flex justify-center items-center group mt-4">
+                                        <div className={`absolute inset-0 bg-brand-blue/20 rounded-full transform group-hover:rotate-0 transition-transform duration-300 ${idx % 3 === 0 ? '-rotate-12 translate-x-1 translate-y-1' :
+                                            idx % 3 === 1 ? 'rotate-12 -translate-x-1 translate-y-2' :
+                                                '-rotate-6 translate-x-2 -translate-y-1'
+                                            }`}></div>
+                                        <div className="w-16 h-16 bg-brand-dark rounded-[20px] shadow-lg flex items-center justify-center relative z-10 border-2 border-brand-blue/30 transform group-hover:-translate-y-1 transition-transform duration-300 text-white">
+                                            <stat.icon className="w-7 h-7 text-[#fff8e1]" />
+                                        </div>
+                                        {idx % 3 === 0 && <div className="absolute top-0 right-0 w-3 h-3 border-2 border-brand-blue rounded-sm rotate-12"></div>}
+                                        {idx % 3 === 1 && <div className="absolute top-2 -left-2 w-3 h-3 border-2 border-brand-blue rounded-full"></div>}
+                                        {idx % 3 === 2 && <div className="absolute -bottom-1 -right-2 w-3 h-3 border-2 border-brand-blue rounded-sm -rotate-45"></div>}
+                                        {idx === 3 && <div className="absolute top-0 right-2 w-2 h-2 border-2 border-brand-blue rounded-sm rotate-45"></div>}
+                                    </div>
+                                    <span className="text-4xl lg:text-5xl font-display font-black text-brand-dark block mb-2">{stat.value}</span>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</p>
                                 </div>
                             ))}
                         </div>

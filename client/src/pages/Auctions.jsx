@@ -96,46 +96,59 @@ const Auctions = () => {
     const activeFiltersCount = selectedCities.length + selectedBanks.length + selectedTypes.length + (searchTerm ? 1 : 0);
 
     return (
-        <div className="bg-slate-50 min-h-screen font-sans">
+        <div className="bg-[#fbfdf2] min-h-screen font-sans border-t border-brand-blue/10">
+            {/* ── Page Header ── */}
+            <div className="bg-white border-b border-slate-100 py-16 text-center px-4">
+                <div className="max-w-3xl mx-auto">
+                    <p className="text-[10px] font-black text-brand-blue uppercase tracking-[0.4em] mb-4">Discover Opportunities</p>
+                    <div className="relative inline-block mb-4">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-brand-dark tracking-tight leading-[1.1] uppercase relative z-10">
+                            Bank Auctions Central
+                        </h1>
+                        <div className="absolute w-52 h-3 bg-brand-blue/30 -bottom-2 left-1/2 transform -translate-x-1/2 -rotate-2 z-0 rounded-full"></div>
+                        <div className="absolute w-40 h-2 bg-brand-blue/20 -bottom-4 left-1/2 transform -translate-x-1/2 rotate-1 z-0 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
 
             {/* ── Main Content ── */}
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-32">
 
                 {/* Toolbar Card */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-white rounded-[20px] shadow-xl shadow-slate-200/50 p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-20 border border-slate-100">
                     {/* Left: count + mobile filter toggle */}
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-4 w-full sm:w-auto pl-2">
                         <button
                             onClick={() => setMobileFilterOpen(v => !v)}
-                            className="lg:hidden flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-dark hover:bg-brand-dark hover:text-white transition-all"
+                            className="lg:hidden flex items-center gap-2 px-4 py-3 bg-brand-dark rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-brand-blue transition-all shadow-md"
                         >
-                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <SlidersHorizontal className="w-4 h-4" />
                             Filters
                             {activeFiltersCount > 0 && (
-                                <span className="bg-brand-blue text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                                <span className="bg-white text-brand-dark text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center ml-1">
                                     {activeFiltersCount}
                                 </span>
                             )}
                         </button>
                         <div>
-                            <p className="font-black text-brand-dark text-base leading-tight">
+                            <p className="font-black text-brand-dark text-[14px] uppercase tracking-wider">
                                 {loading ? 'Loading...' : `${filteredAuctions.length} Properties`}
                             </p>
                             {activeFiltersCount > 0 && (
-                                <button onClick={clearFilters} className="flex items-center gap-1 text-[9px] text-red-500 font-bold hover:text-red-700 transition-colors">
-                                    <X className="w-2.5 h-2.5" /> Clear filters
+                                <button onClick={clearFilters} className="flex items-center gap-1 text-[10px] text-red-500 font-bold hover:text-red-700 transition-colors uppercase tracking-widest mt-1">
+                                    <X className="w-3 h-3" /> Clear Active Filters
                                 </button>
                             )}
                         </div>
                     </div>
 
                     {/* Right: sort + view mode */}
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
                         {/* Sort */}
-                        <div className="relative flex-1 sm:flex-none sm:w-48">
-                            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
+                        <div className="relative flex-1 sm:flex-none sm:w-56">
+                            <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-blue pointer-events-none" />
                             <select
-                                className="appearance-none w-full bg-slate-50 border border-slate-100 text-[11px] font-black uppercase tracking-widest text-brand-dark py-2.5 pl-9 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all cursor-pointer"
+                                className="appearance-none w-full bg-slate-50 border border-slate-200 text-[11px] font-black uppercase tracking-widest text-brand-dark py-3.5 pl-11 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all cursor-pointer shadow-sm hover:border-brand-blue/50"
                                 value={priceSort}
                                 onChange={(e) => setPriceSort(e.target.value)}
                             >
@@ -143,18 +156,18 @@ const Auctions = () => {
                                 <option value="asc">Price: Low → High</option>
                                 <option value="desc">Price: High → Low</option>
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
+                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-blue pointer-events-none" />
                         </div>
 
                         {/* View toggle */}
-                        <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-100 gap-0.5">
+                        <div className="flex bg-slate-100 rounded-xl p-1.5 border border-slate-200 gap-1 shadow-inner">
                             {[['grid', LayoutGrid], ['list', List]].map(([mode, Icon]) => (
                                 <button
                                     key={mode}
                                     onClick={() => setViewMode(mode)}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === mode
-                                        ? 'bg-brand-dark text-white shadow-sm'
-                                        : 'text-slate-400 hover:text-brand-dark'
+                                    className={`p-2.5 rounded-lg transition-all ${viewMode === mode
+                                        ? 'bg-brand-dark text-white shadow-md'
+                                        : 'text-slate-500 hover:text-brand-dark hover:bg-slate-200'
                                         }`}
                                 >
                                     <Icon className="w-4 h-4" />

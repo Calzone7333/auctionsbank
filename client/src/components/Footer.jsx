@@ -117,7 +117,7 @@ const Footer = () => {
                 <div className="border-t border-white/5 pt-10">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         <p className="text-[11px] font-semibold text-slate-500 text-center md:text-left">
-                            © {new Date().getFullYear()} <span className="text-white">Madrasauction Property Auctions</span>. All rights reserved.
+                            © {new Date().getFullYear()} <span className="text-white"> Hado Global Services Pvt Ltd</span>. All rights reserved.
                         </p>
                         <div className="flex gap-6 text-[11px] font-bold uppercase tracking-widest">
                             <Link to="/terms" className="text-slate-500 hover:text-white transition-colors">Terms & Conditions</Link>

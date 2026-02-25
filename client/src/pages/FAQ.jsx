@@ -58,7 +58,11 @@ const FAQ = () => {
             <div className="bg-slate-50 border-b border-gray-100 py-24 px-4 text-center">
                 <div className="max-w-3xl mx-auto">
                     <p className="text-[10px] font-black text-brand-blue uppercase tracking-[0.4em] mb-4">Support Center</p>
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-brand-dark mb-6 uppercase tracking-tight">How can we <br /> help?</h1>
+                    <div className="relative inline-block mb-6">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-brand-dark uppercase tracking-tight relative z-10">How can we <br /> help?</h1>
+                        <div className="absolute w-44 h-3 bg-brand-blue/30 -bottom-2 left-1/2 transform -translate-x-1/2 -rotate-2 z-0 rounded-full"></div>
+                        <div className="absolute w-36 h-2 bg-brand-blue/20 -bottom-4 left-1/2 transform -translate-x-1/2 rotate-1 z-0 rounded-full"></div>
+                    </div>
 
                     {/* Search Bar - Visual Only for now */}
                     <div className="max-w-md mx-auto relative mt-8">

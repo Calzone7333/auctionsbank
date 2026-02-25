@@ -27,20 +27,11 @@ const Hero = () => {
                     transition={{ duration: 0.9, delay: 0.3 }}
                     className="space-y-6 max-w-3xl"
                 >
-                    {/* Badge */}
-                    <motion.span
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.5 }}
-                        className="text-brand-blue font-black tracking-[0.4em] uppercase text-[9px] drop-shadow-sm border-b border-brand-blue/30 pb-2 inline-block"
-                    >
-                        India's Trusted Auction Platform
-                    </motion.span>
+
 
                     {/* Heading */}
                     <h1 className="text-3xl md:text-5xl lg:text-6xl font-display font-black text-white leading-[1.1] uppercase tracking-tight">
-                        Secure Prime <br className="hidden md:block" />
-                        Bank Auctions
+                        Secure Prime Bank Auctions
                     </h1>
 
                     {/* Description */}
@@ -67,7 +58,7 @@ const Hero = () => {
             </div>
 
             {/* Bottom Gradient for smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/60 to-transparent" />
         </div>
     );
 };
