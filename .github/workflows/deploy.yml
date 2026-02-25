@@ -56,7 +56,7 @@ jobs:
           # Create directory if it doesn't exist
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /home/prakash/apps/auctionsbank/server/target"
           
-          rsync -avz --delete -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
           server/target/aquection-server-0.0.1-SNAPSHOT.jar \
           prakash@103.181.108.248:/home/prakash/apps/auctionsbank/server/target/
 
@@ -68,7 +68,7 @@ jobs:
           # Create directory if it doesn't exist
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /home/prakash/apps/auctionsbank/client/dist"
           
-          rsync -avz --delete -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
+          rsync -avz --delete --exclude 'uploads' -e "ssh -p 19919 -o StrictHostKeyChecking=no" \
           client/dist/ \
           prakash@103.181.108.248:/home/prakash/apps/auctionsbank/client/dist/
 
@@ -77,8 +77,8 @@ jobs:
       ############################
       - name: Copy Frontend
         run: |
-          # Ensure web directory exists and copy contents
-          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /var/www/auctionsbank && rm -rf /var/www/auctionsbank/* && cp -r /home/prakash/apps/auctionsbank/client/dist/* /var/www/auctionsbank/"
+          # Ensure web directory exists and copy contents using rsync to preserve uploads folder
+          ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 "mkdir -p /var/www/auctionsbank && rsync -av --delete --exclude 'uploads' /home/prakash/apps/auctionsbank/client/dist/ /var/www/auctionsbank/"
 
       ############################
       # 8️⃣ Restart Backend Application
@@ -86,14 +86,14 @@ jobs:
       - name: Restart Backend
         run: |
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 << 'EOF'
+            # Navigate to the server directory so that uploads folder gets created correctly
+            cd /home/prakash/apps/auctionsbank/server
+
             # Stop existing backend if running
             pkill -f 'aquection-server' || true
             
             # Start new backend in background
-            nohup java -jar /home/prakash/apps/auctionsbank/server/target/aquection-server-0.0.1-SNAPSHOT.jar > /home/prakash/apps/auctionsbank/server/app.log 2>&1 &
-            
-            # Optional: Reload apache if needed (though static files don't require it)
-            # sudo systemctl reload apache2
+            nohup java -jar target/aquection-server-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
             
             echo "AuctionsBank Deployment Complete!"
           EOF
