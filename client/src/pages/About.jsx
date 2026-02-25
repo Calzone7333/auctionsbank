@@ -10,7 +10,7 @@ const About = () => {
             <div
                 className="relative pt-32 pb-32 md:pt-48 md:pb-48 text-center"
                 style={{
-                    backgroundImage: "url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80')",
+                    backgroundImage: "url('/about_hero.jpg')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                 }}
@@ -65,7 +65,7 @@ const About = () => {
                             {/* Blob Image */}
                             <div className="relative">
                                 <div className="absolute inset-0 bg-brand-blue/10 transform translate-x-4 -translate-y-4 rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%]"></div>
-                                <img src="https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=600&q=80"
+                                <img src="/about_confident.jpg"
                                     className="w-[280px] h-[280px] md:w-[380px] md:h-[380px] object-cover relative z-10 border-8 border-white shadow-xl rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%]"
                                     alt="Investment" />
                             </div>
@@ -91,7 +91,7 @@ const About = () => {
                             {/* Blob Image */}
                             <div className="relative">
                                 <div className="absolute inset-0 bg-brand-blue/10 transform -translate-x-4 translate-y-4 rounded-[50%_50%_30%_70%_/_60%_30%_70%_40%]"></div>
-                                <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80"
+                                <img src="/about_analytics.jpg"
                                     className="w-[280px] h-[280px] md:w-[380px] md:h-[380px] object-cover relative z-10 border-8 border-white shadow-xl rounded-[40%_60%_70%_30%_/_50%_60%_40%_50%]"
                                     alt="Analytics" />
                             </div>

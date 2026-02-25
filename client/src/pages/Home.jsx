@@ -29,17 +29,17 @@ const TabContent = ({ activeTab }) => {
     const content = {
         'knowledge': {
             title: 'Market Expertise',
-            image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070&auto=format&fit=crop',
+            image: '/market_expertise.jpg',
             desc: 'Our team specializes in the intricate world of bank auctions, providing you with data-driven insights and verified opportunities for high-yield investments.'
         },
         'excellence': {
             title: 'Verified Opportunities',
-            image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
+            image: '/verified_opportunities.jpg',
             desc: 'We pride ourselves on our rigorous vetting process. Every auction on our platform is sourced from reputable financial institutions and legal channels.'
         },
         'pricing': {
             title: 'Transparent Process',
-            image: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?q=80&w=2069&auto=format&fit=crop',
+            image: '/transparency.jpg',
             desc: 'Real estate investment shouldn\'t be a mystery. We provide clear pricing, EMD details, and legal documentation to ensure a seamless transparent journey.'
         }
     };
@@ -205,12 +205,12 @@ const HomePage = () => {
                             {[
                                 {
                                     title: 'Live Analytics Dashboard',
-                                    img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop',
+                                    img: '/analytics_dashboard.jpg',
                                     desc: "Track real-time auction statuses, reserve prices, and compare historical bidding trends instantly."
                                 },
                                 {
                                     title: 'Secure Document Vault',
-                                    img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2070&auto=format&fit=crop',
+                                    img: '/document_vault.jpg',
                                     desc: "Access digital copies of sale notices, title deeds, and essential legal documents in one click."
                                 }
                             ].map((item, idx) => (
@@ -303,7 +303,7 @@ const HomePage = () => {
                             ))}
                         </div>
                         <div className="relative">
-                            <img src="https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=2070&auto=format&fit=crop" alt="Digital Map" className="w-full opacity-80" />
+                            <img src="/digital_map.jpg" alt="Digital Map" className="w-full opacity-80 rounded-3xl object-cover h-[400px]" />
                             <div className="absolute top-1/2 left-1/3 animate-ping">
                                 <MapPin size={24} className="text-brand-blue" />
                             </div>
