@@ -45,4 +45,25 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendPaymentSuccessEmail(String toEmail, String fullName, String orderId, String paymentId,
+            long amount) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Premium membership activated - aquection");
+        message.setText(
+                "Dear " + fullName + ",\n\n" +
+                        "Congratulations! Your payment of ₹" + amount + " was successful.\n\n" +
+                        "Transaction Details:\n" +
+                        "Order ID: " + orderId + "\n" +
+                        "Payment ID: " + paymentId + "\n\n" +
+                        "Your account has been upgraded to PREMIUM. You now have full access to all elite features.\n\n"
+                        +
+                        "Thank you for choosing aquection!\n\n" +
+                        "Best regards,\n" +
+                        "The aquection Team");
+
+        mailSender.send(message);
+    }
 }

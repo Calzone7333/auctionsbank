@@ -16,6 +16,10 @@ import FAQ from './pages/FAQ';
 import AdminDashboard from './pages/AdminDashboard';
 import VerifyEmail from './pages/VerifyEmail';
 import ResetPassword from './pages/ResetPassword';
+import Plans from './pages/Plans';
+import UserDashboard from './pages/UserDashboard';
+import ChangePassword from './pages/ChangePassword';
+import Favourites from './pages/Favourites';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
 import { Navigate } from 'react-router-dom';
@@ -55,6 +59,10 @@ const AppContent = () => {
         />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/favourites" element={<Favourites />} />
       </Routes>
       {!shouldHide && <Footer />}
     </div>

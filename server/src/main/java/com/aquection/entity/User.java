@@ -48,6 +48,11 @@ public class User {
 
     private java.time.LocalDateTime resetPasswordTokenExpiry;
 
+    @Enumerated(EnumType.STRING)
+    private AccountType accountType = AccountType.FREE;
+
+    private LocalDateTime planExpiryDate;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -57,5 +62,10 @@ public class User {
     public enum Role {
         USER,
         ADMIN
+    }
+
+    public enum AccountType {
+        FREE,
+        PREMIUM
     }
 }

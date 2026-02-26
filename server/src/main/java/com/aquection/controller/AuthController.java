@@ -57,13 +57,23 @@ public class AuthController {
             User user = userRepository.findByEmail(loginRequest.getEmail())
                     .orElseThrow(() -> new RuntimeException("Error: User not found."));
 
+            // Auto-downgrade if expired
+            if (user.getAccountType() == User.AccountType.PREMIUM && user.getPlanExpiryDate() != null) {
+                if (user.getPlanExpiryDate().isBefore(java.time.LocalDateTime.now())) {
+                    user.setAccountType(User.AccountType.FREE);
+                    userRepository.save(user);
+                }
+            }
+
             return ResponseEntity.ok(new JwtResponse(
                     jwt,
                     user.getId(),
                     user.getEmail(),
                     user.getRole().name(),
+                    user.getAccountType() != null ? user.getAccountType().name() : "FREE",
                     user.isVerified(),
-                    user.isEmailVerified()));
+                    user.isEmailVerified(),
+                    user.getPlanExpiryDate()));
         } catch (org.springframework.security.core.AuthenticationException e) {
             return ResponseEntity.status(401).body("Error: Unauthorized - " + e.getMessage());
         } catch (Exception e) {
@@ -140,6 +150,14 @@ public class AuthController {
                     userRepository.save(user);
                 }
 
+                // Auto-downgrade if expired
+                if (user.getAccountType() == User.AccountType.PREMIUM && user.getPlanExpiryDate() != null) {
+                    if (user.getPlanExpiryDate().isBefore(java.time.LocalDateTime.now())) {
+                        user.setAccountType(User.AccountType.FREE);
+                        userRepository.save(user);
+                    }
+                }
+
                 // Authenticate manually
                 Authentication authentication = new UsernamePasswordAuthenticationToken(user.getEmail(), null,
                         Collections.emptyList());
@@ -152,8 +170,10 @@ public class AuthController {
                         user.getId(),
                         user.getEmail(),
                         user.getRole().name(),
+                        user.getAccountType() != null ? user.getAccountType().name() : "FREE",
                         user.isVerified(),
-                        user.isEmailVerified()));
+                        user.isEmailVerified(),
+                        user.getPlanExpiryDate()));
 
             } else {
                 return ResponseEntity.status(401).body("Error: Invalid Google ID token.");

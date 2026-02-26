@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Phone, Mail, User, ChevronDown, Gavel, Ship, MapPin } from 'lucide-react';
+import { Menu, X, Phone, Mail, User, ChevronDown, Gavel, Ship, MapPin, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthModal from './AuthModal';
@@ -54,6 +54,7 @@ const Navbar = () => {
         { name: 'About Us', path: '/about' },
         { name: 'FAQ', path: '/faq' },
         { name: 'Contact', path: '/contact' },
+        { name: 'Premium', path: '/plans', isHighlight: true },
     ];
 
     return (
@@ -104,13 +105,16 @@ const Navbar = () => {
                                 <Link
                                     key={item.name}
                                     to={item.path}
-                                    className={`text-[13px] font-black uppercase tracking-widest transition-all duration-300 relative group ${location.pathname === item.path
-                                        ? 'text-brand-blue'
-                                        : 'text-brand-dark hover:text-brand-blue'
+                                    className={`text-[13px] font-black uppercase tracking-widest transition-all duration-300 relative group flex items-center gap-1.5 ${item.isHighlight
+                                        ? 'text-brand-blue bg-blue-50/50 px-3 py-1.5 rounded-lg ring-1 ring-brand-blue/20 hover:bg-brand-blue hover:text-white'
+                                        : location.pathname === item.path
+                                            ? 'text-brand-blue'
+                                            : 'text-brand-dark hover:text-brand-blue'
                                         }`}
                                 >
+                                    {item.isHighlight && <Sparkles size={14} className={location.pathname === item.path ? '' : 'text-aq-gold'} />}
                                     {item.name}
-                                    <span className={`absolute -bottom-1 left-0 w-full h-0.5 bg-brand-blue transition-transform duration-300 transform scale-x-0 group-hover:scale-x-100 ${location.pathname === item.path ? 'scale-x-100' : ''}`} />
+                                    {!item.isHighlight && <span className={`absolute -bottom-1 left-0 w-full h-0.5 bg-brand-blue transition-transform duration-300 transform scale-x-0 group-hover:scale-x-100 ${location.pathname === item.path ? 'scale-x-100' : ''}`} />}
                                 </Link>
                             ))}
                         </div>
@@ -141,37 +145,76 @@ const Navbar = () => {
                                         <button
                                             className="flex items-center gap-2 p-2 bg-slate-50 text-brand-blue hover:bg-blue-50 rounded-lg transition-all border border-slate-100"
                                         >
-                                            <span className="text-[10px] hidden md:block font-bold text-slate-600 uppercase tracking-wider">{user.role}</span>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] hidden md:block font-bold text-slate-600 uppercase tracking-wider">{user.role}</span>
+                                                {user.accountType === 'PREMIUM' && (
+                                                    <span className="text-[8px] bg-brand-blue text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter flex items-center gap-0.5">
+                                                        <Sparkles size={8} /> Premium
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="bg-white p-1 rounded-full shadow-sm">
                                                 <User className="h-4 w-4" />
                                             </div>
                                         </button>
 
-                                        <div className="absolute right-0 top-full pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
-                                            <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
-                                                <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/50">
-                                                    <p className="text-xs text-slate-400 font-medium">Signed in as</p>
-                                                    <p className="text-xs font-bold text-slate-700 truncate mt-0.5">{user.email}</p>
-                                                </div>
-                                                <div className="p-1">
-                                                    {user.role === 'ADMIN' && (
+                                        <div className="absolute right-0 top-full pt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+                                            {user.role === 'ADMIN' ? (
+                                                <div className="bg-brand-dark rounded-xl shadow-2xl overflow-hidden border border-slate-700">
+                                                    <div className="px-5 py-4 border-b border-slate-700 bg-slate-800/50">
+                                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Administrator</p>
+                                                        <p className="text-sm font-black text-white truncate mt-0.5 uppercase tracking-tight">{user.fullName || user.email}</p>
+                                                    </div>
+                                                    <div className="p-2 space-y-1">
                                                         <Link
                                                             to="/admin-dashboard"
-                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-aq-blue hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                                                            className="flex items-center justify-center px-4 py-3 text-xs font-black text-white uppercase tracking-widest hover:bg-brand-blue rounded-lg transition-all"
                                                         >
-                                                            <Gavel className="w-4 h-4" />
                                                             Admin Panel
                                                         </Link>
-                                                    )}
-                                                    <button
-                                                        onClick={logout}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg font-medium transition-colors text-left"
-                                                    >
-                                                        <User className="w-4 h-4 rotate-180" />
-                                                        Sign Out
-                                                    </button>
+                                                        <button
+                                                            onClick={logout}
+                                                            className="w-full flex items-center justify-center px-4 py-3 text-xs font-black text-red-400 uppercase tracking-widest hover:bg-red-500/10 rounded-lg transition-all border-t border-slate-700 mt-1"
+                                                        >
+                                                            Logout
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) : (
+                                                <div className="bg-brand-dark rounded-xl shadow-2xl overflow-hidden border border-slate-700">
+                                                    <div className="px-5 py-4 border-b border-slate-700 bg-slate-800/50">
+                                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Account</p>
+                                                        <p className="text-sm font-black text-white truncate mt-0.5 uppercase tracking-tight">{user.fullName || user.email}</p>
+                                                    </div>
+                                                    <div className="p-2 space-y-1">
+                                                        <Link
+                                                            to="/dashboard"
+                                                            className="flex items-center justify-center px-4 py-3 text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 rounded-lg transition-all"
+                                                        >
+                                                            Dashboard
+                                                        </Link>
+                                                        <Link
+                                                            to="/change-password"
+                                                            className="flex items-center justify-center px-4 py-3 text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 rounded-lg transition-all"
+                                                        >
+                                                            Change Password
+                                                        </Link>
+                                                        <Link
+                                                            to="/favourites"
+                                                            className="flex items-center justify-center px-4 py-3 text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 rounded-lg transition-all"
+                                                        >
+                                                            Favourite
+                                                        </Link>
+
+                                                        <button
+                                                            onClick={logout}
+                                                            className="w-full flex items-center justify-center px-4 py-3 text-xs font-black text-red-400 uppercase tracking-widest hover:bg-red-500/10 rounded-lg transition-all border-t border-slate-700 mt-1"
+                                                        >
+                                                            Logout
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

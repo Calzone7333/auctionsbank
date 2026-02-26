@@ -26,6 +26,14 @@ public class UserController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Error: User not found."));
 
+        // Auto-downgrade if expired
+        if (user.getAccountType() == User.AccountType.PREMIUM && user.getPlanExpiryDate() != null) {
+            if (user.getPlanExpiryDate().isBefore(java.time.LocalDateTime.now())) {
+                user.setAccountType(User.AccountType.FREE);
+                userRepository.save(user);
+            }
+        }
+
         return ResponseEntity.ok(user);
     }
 

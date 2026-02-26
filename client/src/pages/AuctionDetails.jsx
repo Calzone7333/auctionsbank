@@ -18,6 +18,16 @@ const AuctionDetails = () => {
     const [loading, setLoading] = useState(true);
     const [imageError, setImageError] = useState(false);
 
+    const isPremiumValid = () => {
+        if (!user) return false;
+        if (user.role === 'ADMIN') return true;
+        if (user.accountType !== 'PREMIUM') return false;
+        if (!user.planExpiryDate) return false;
+
+        const expiry = new Date(user.planExpiryDate);
+        return expiry > new Date();
+    };
+
     useEffect(() => {
         setLoading(true);
         fetch(`${API_BASE_URL}/auctions/${id}`)
@@ -153,11 +163,11 @@ const AuctionDetails = () => {
                         {/* Details Grid - Matching Screenshot style */}
                         <div className="space-y-4 pt-2">
                             {[
-                                { label: 'Borrower Name', value: auction.borrowerName },
+                                { label: 'Borrower Name', value: auction.borrowerName, isPremium: true },
                                 { label: 'Bank Name', value: auction.bankName, isLink: true },
                                 { label: 'Property Type', value: auction.propertyType },
                                 { label: 'Description', value: auction.description || `Individual House for Sale in ${auction.cityName}` },
-                                { label: 'Location', value: auction.location },
+                                { label: 'Location', value: auction.location, isPremium: true },
                                 { label: 'Area', value: auction.area },
                                 { label: 'Possession', value: auction.possession },
                                 { label: 'Locality', value: auction.locality },
@@ -168,23 +178,35 @@ const AuctionDetails = () => {
                                 { label: 'EMD submission', value: formatDate(auction.emdLastDate) },
                                 { label: 'Auction Start Date & Time', value: formatDate(auction.auctionDate), subValue: 'Add To Calendar' },
                                 { label: 'Auction End Date & Time', value: formatDate(auction.auctionEndDate) },
-                                { label: 'Bank Contact Details', value: auction.bankContactDetails },
+                                { label: 'Bank Contact Details', value: auction.bankContactDetails, isPremium: true },
                             ].map((item, idx) => (
-                                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 py-1 min-h-[32px] items-start">
+                                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 py-1 min-h-[32px] items-start relative overflow-hidden">
                                     <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">{item.label}</span>
-                                    <div className="md:col-span-2 space-y-1">
-                                        <p className={`text-[13px] ${item.isLink ? 'text-blue-500 font-bold hover:underline cursor-pointer' : 'text-slate-600'} ${item.isBold ? 'font-bold' : ''}`}>
-                                            {item.value || 'N/A'}
-                                        </p>
-                                        {item.subValue && (
-                                            <a
-                                                href={getCalendarLink()}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-[11px] text-blue-500 font-bold hover:underline block mt-1"
-                                            >
-                                                {item.subValue}
-                                            </a>
+                                    <div className={`md:col-span-2 space-y-1 relative ${item.isPremium && !isPremiumValid() ? 'select-none' : ''}`}>
+                                        {item.isPremium && !isPremiumValid() ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[13px] text-slate-400 blur-[5px] cursor-not-allowed">
+                                                    **********************
+                                                </span>
+                                                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-black uppercase tracking-tighter ring-1 ring-slate-200">Premium Only</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <p className={`text-[13px] ${item.isLink ? 'text-blue-500 font-bold hover:underline cursor-pointer' : 'text-slate-600'} ${item.isBold ? 'font-bold' : ''}`}>
+                                                    {item.value || 'N/A'}
+                                                </p>
+                                                {item.subValue && (
+                                                    <a
+                                                        href={getCalendarLink()}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-[11px] text-blue-500 font-bold hover:underline block mt-1"
+                                                    >
+                                                        {item.subValue}
+                                                    </a>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -194,7 +216,17 @@ const AuctionDetails = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 py-4 items-start">
                                 <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">Download Auction File</span>
                                 <div className="md:col-span-2">
-                                    {auction.noticeUrl ? (
+                                    {!isPremiumValid() ? (
+                                        <div className="flex items-center gap-4 group">
+                                            <div className="p-3 bg-slate-100 rounded-lg border border-dashed border-slate-300">
+                                                <Lock className="w-8 h-8 text-slate-400" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[13px] text-slate-400 blur-[4px] select-none">notice_file_auction.pdf</span>
+                                                <Link to="/plans" className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-1 py-1 hover:underline">Subscribe to Download</Link>
+                                            </div>
+                                        </div>
+                                    ) : auction.noticeUrl ? (
                                         <a
                                             href={getFileUrl(auction.noticeUrl)}
                                             target="_blank"
@@ -220,6 +252,49 @@ const AuctionDetails = () => {
                                 <button className="text-[11px] text-blue-500 hover:underline text-left">Report inaccuracy</button>
                             </div>
                         </div>
+
+                        {/* Premium Protection Banner - Moved to Bottom */}
+                        {!isPremiumValid() && (
+                            <div className="relative group overflow-hidden mt-12">
+                                {/* Blurred Background Overlay for following content */}
+                                <div className="bg-brand-blue rounded-3xl p-8 md:p-12 text-center relative z-10 shadow-2xl shadow-brand-blue/30 overflow-hidden">
+                                    {/* Decorative background elements */}
+                                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                                    <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-brand-dark/20 rounded-full blur-3xl"></div>
+
+                                    <div className="relative z-20 space-y-6">
+                                        <div className="flex justify-center flex-col items-center gap-4">
+                                            <div className="relative">
+                                                <div className="absolute -inset-4 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+                                                <div className="bg-white p-5 rounded-full shadow-xl relative">
+                                                    <Sparkles className="w-10 h-10 text-brand-blue animate-bounce" />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-px w-8 md:w-16 bg-white/30"></div>
+                                                <h2 className="text-xl md:text-3xl font-black text-white uppercase tracking-tighter">Become Premium Member</h2>
+                                                <div className="h-px w-8 md:w-16 bg-white/30"></div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-white/90 text-sm md:text-lg font-medium max-w-2xl mx-auto leading-relaxed">
+                                            To view complete address, auction notice & authorize person contact details
+                                        </p>
+
+                                        <div className="pt-4 flex flex-col items-center gap-4">
+                                            <Link
+                                                to="/plans"
+                                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-xl font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/40 transition-all hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+                                            >
+                                                Get Premium for ₹999
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
+                                            <p className="text-white/50 text-[10px] font-bold uppercase tracking-[0.2em]">Unlock Instant Access • 1 Month Validity</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Sidebar */}

@@ -186,6 +186,7 @@ const AdminDashboard = () => {
         if (auctionEnd) data.auctionEndDate = auctionEnd;
 
         setFormData(data);
+        setAutoFillText(''); // Clear magic fill source
         alert('Magic Auto-Fill completed! Please review the fields.');
     };
 
@@ -299,6 +300,7 @@ const AdminDashboard = () => {
                 setSelectedImage(null); // Add this
                 setImagePreview(null); // Add this
                 setEditingAuctionId(null);
+                setAutoFillText(''); // Clear auto-fill text
                 setActiveTab(isEditing ? 'my-auctions' : 'auctions');
 
                 // Refresh data

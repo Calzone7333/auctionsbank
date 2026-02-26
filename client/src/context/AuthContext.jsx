@@ -59,6 +59,24 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('user');
         setUser(null);
+        window.location.href = '/';
+    };
+
+    const refreshUser = async () => {
+        if (!user || !user.token) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/me`, {
+                headers: { 'Authorization': `Bearer ${user.token}` }
+            });
+            if (response.ok) {
+                const updatedUser = await response.json();
+                const newUser = { ...user, ...updatedUser };
+                localStorage.setItem('user', JSON.stringify(newUser));
+                setUser(newUser);
+            }
+        } catch (error) {
+            console.error("Failed to refresh user:", error);
+        }
     };
 
     const googleLogin = async (token) => {
@@ -112,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, googleLogin, forgotPassword, resetPassword, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, googleLogin, forgotPassword, resetPassword, refreshUser, loading }}>
             {children}
         </AuthContext.Provider>
     );
