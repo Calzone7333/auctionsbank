@@ -138,4 +138,19 @@ public class AuctionController {
             return ResponseEntity.ok(saved);
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return auctionRepository.findById(id).map(auction -> {
+            if (!auction.getCreatedByEmail().equals(userDetails.getUsername())) {
+                return ResponseEntity.status(403).body("You can only delete auctions you created.");
+            }
+            // Soft delete
+            auction.setActive(false);
+            auctionRepository.save(auction);
+            return ResponseEntity.ok("Auction deleted successfully");
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }

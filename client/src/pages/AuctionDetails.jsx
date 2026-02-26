@@ -7,7 +7,7 @@ import {
     ExternalLink, ChevronRight, Ruler, Compass, Home, Layers,
     Clock, AlertTriangle, FileCheck, Lock, Sparkles
 } from 'lucide-react';
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, getFileUrl } from '../apiConfig';
 
 const AuctionDetails = () => {
     const { id } = useParams();
@@ -132,7 +132,7 @@ const AuctionDetails = () => {
                                         <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm">Front View</span>
                                     </div>
                                     <img
-                                        src={auction.noticeUrl}
+                                        src={getFileUrl(auction.noticeUrl)}
                                         alt="Property Front View"
                                         className="w-full aspect-[16/7] object-cover"
                                     />
@@ -140,7 +140,7 @@ const AuctionDetails = () => {
                                 {/* Thumbnails */}
                                 <div className="flex gap-2">
                                     <div className="w-20 h-20 rounded-md border-2 border-brand-blue overflow-hidden cursor-pointer">
-                                        <img src={auction.noticeUrl} className="w-full h-full object-cover" alt="tab" />
+                                        <img src={getFileUrl(auction.noticeUrl)} className="w-full h-full object-cover" alt="tab" />
                                     </div>
                                 </div>
                             </div>
@@ -200,7 +200,7 @@ const AuctionDetails = () => {
                                 <div className="md:col-span-2">
                                     {auction.noticeUrl ? (
                                         <a
-                                            href={auction.noticeUrl}
+                                            href={getFileUrl(auction.noticeUrl)}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="flex flex-col items-center w-fit group"

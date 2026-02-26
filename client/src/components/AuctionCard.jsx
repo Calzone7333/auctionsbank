@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Building2, IndianRupee, ArrowUpRight, Home, Briefcase, Warehouse, Castle, Gavel } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getFileUrl } from '../apiConfig';
 
 const getPropertyStyle = (type) => {
     switch (type) {
@@ -26,9 +27,7 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
     /* ─── LIST VIEW ─── */
     if (viewMode === 'list') {
         const isImage = auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiHost = isLocal ? 'http://localhost:8083' : 'https://madrasauction.com/api';
-        const imageUrl = isImage ? (auction.noticeUrl.startsWith('http') ? auction.noticeUrl : `${apiHost}${auction.noticeUrl}`) : null;
+        const imageUrl = isImage ? getFileUrl(auction.noticeUrl) : null;
 
         return (
             <div className="flex flex-col sm:flex-row gap-6 py-6 px-6 border-b border-slate-100 bg-white hover:bg-slate-50/50 transition-all duration-300">

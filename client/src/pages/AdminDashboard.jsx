@@ -21,11 +21,12 @@ import {
     Bell,
     Settings,
     Sparkles,
-    Zap
+    Zap,
+    Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, getFileUrl } from '../apiConfig';
 
 const AdminDashboard = () => {
     const { user, logout } = useAuth();
@@ -368,6 +369,30 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             console.error('Error updating role:', error);
+            alert('An error occurred.');
+        }
+    };
+
+    const handleDeleteAuction = async (auctionId) => {
+        if (!window.confirm('Are you sure you want to delete this auction?')) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auctions/${auctionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${user.token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('Auction deleted successfully!');
+                setAllAuctions(prev => prev.filter(a => a.id !== auctionId));
+            } else {
+                const errorData = await response.text();
+                alert(`Failed to delete auction: ${errorData}`);
+            }
+        } catch (error) {
+            console.error('Error deleting auction:', error);
             alert('An error occurred.');
         }
     };
@@ -769,7 +794,7 @@ const AdminDashboard = () => {
                                                 />
                                                 {formData.noticeUrl && !selectedFile && (
                                                     <p className="text-xs text-brand-blue mt-1">
-                                                        Current file: <a href={formData.noticeUrl} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
+                                                        Current file: <a href={getFileUrl(formData.noticeUrl)} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
                                                     </p>
                                                 )}
                                             </div>
@@ -960,6 +985,13 @@ const AdminDashboard = () => {
                                                             className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"
                                                         >
                                                             <FileEdit className="w-3 h-3" /> Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteAuction(auction.id)}
+                                                            className="ml-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-red-100"
+                                                            title="Delete Auction"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" /> Delete
                                                         </button>
                                                     </td>
                                                 </tr>
