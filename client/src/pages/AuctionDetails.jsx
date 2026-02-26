@@ -16,6 +16,7 @@ const AuctionDetails = () => {
     const [auction, setAuction] = useState(null);
     const [similarAuctions, setSimilarAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -124,8 +125,8 @@ const AuctionDetails = () => {
                             </div>
                         </div>
 
-                        {/* Image Section - Only shown if an image is actually uploaded */}
-                        {(auction.imageUrl || (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i))) && (
+                        {/* Image Section - Only shown if an image is actually uploaded and not broken */}
+                        {(auction.imageUrl || (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i))) && !imageError && (
                             <div className="space-y-4">
                                 <div className="relative rounded-lg overflow-hidden border border-slate-100 shadow-sm">
                                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
@@ -135,6 +136,7 @@ const AuctionDetails = () => {
                                         src={auction.imageUrl ? getFileUrl(auction.imageUrl) : getFileUrl(auction.noticeUrl)}
                                         alt="Property View"
                                         className="w-full aspect-[16/7] object-cover"
+                                        onError={() => setImageError(true)}
                                     />
                                 </div>
                             </div>
