@@ -5,7 +5,7 @@ import {
     MapPin, Building2, Calendar, IndianRupee, FileText, ArrowLeft,
     Share2, ShieldCheck, Download, Phone, Mail, Printer,
     ExternalLink, ChevronRight, Ruler, Compass, Home, Layers,
-    Clock, AlertTriangle, FileCheck, Lock, Sparkles
+    Clock, AlertTriangle, Lock, Sparkles
 } from 'lucide-react';
 import { API_BASE_URL, getFileUrl } from '../apiConfig';
 

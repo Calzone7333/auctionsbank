@@ -846,7 +846,7 @@ const AdminDashboard = () => {
                                                     {formData.noticeUrl && !selectedFile && (
                                                         <div className="mt-3 flex items-center gap-2">
                                                             <div className="w-8 h-10 bg-slate-100 rounded flex items-center justify-center">
-                                                                <FileCheck className="w-4 h-4 text-brand-blue" />
+                                                                <FileText className="w-4 h-4 text-brand-blue" />
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Attached Document</p>
