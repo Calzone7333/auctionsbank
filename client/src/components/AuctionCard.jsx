@@ -24,20 +24,28 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
         ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
         : 'NA';
 
+    const [imageError, setImageError] = React.useState(false);
+
+    // Image logic: Prioritize imageUrl, fallback to noticeUrl if it's an image
+    let imageUrl = null;
+    if (auction.imageUrl) {
+        imageUrl = getFileUrl(auction.imageUrl);
+    } else if (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+        imageUrl = getFileUrl(auction.noticeUrl);
+    }
+
     /* ─── LIST VIEW ─── */
     if (viewMode === 'list') {
-        const isImage = auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-        const imageUrl = isImage ? getFileUrl(auction.noticeUrl) : null;
-
         return (
             <div className="flex flex-col sm:flex-row gap-6 py-6 px-6 border-b border-slate-100 bg-white hover:bg-slate-50/50 transition-all duration-300">
-                {/* Image Section - Only shown if uploaded */}
-                {isImage && (
+                {/* Image Section */}
+                {imageUrl && !imageError && (
                     <div className="w-full sm:w-[260px] h-[160px] flex-shrink-0 relative group">
                         <img
                             src={imageUrl}
                             alt={auction.title}
                             className="w-full h-full object-cover rounded-md shadow-sm border border-slate-200"
+                            onError={() => setImageError(true)}
                         />
                         <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1 rounded border border-slate-200">
                             <div className="w-4 h-4 rounded-sm bg-brand-blue/10 flex items-center justify-center">
@@ -52,52 +60,42 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
                     {/* Property Details */}
                     <div className="flex-1">
                         <Link to={`/auctions/${auction.id}`}>
-                            <h3 className="text-[19px] font-semibold text-[#4e71c4] hover:text-[#3b5998] transition-colors mb-2 tracking-tight leading-tight">
+                            <h3 className="text-[19px] font-semibold text-[#4e71c4] hover:text-[#3b5998] transition-colors mb-2 tracking-tight leading-tight uppercase">
                                 {auction.title}
                             </h3>
                         </Link>
 
-                        {/* Project / Locality Badge */}
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                            {auction.locality && (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <MapPin className="w-3 h-3 text-brand-blue/60" />
-                                    {auction.locality}
-                                </span>
-                            )}
+                        <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mb-4">
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-bold rounded-full border border-slate-100 uppercase tracking-widest">
+                                <MapPin className="w-3 h-3 text-brand-blue" />
+                                {auction.locality || auction.cityName}
+                            </span>
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-bold rounded-full border border-slate-100 uppercase tracking-widest">
+                                <Building2 className="w-3 h-3 text-brand-blue" />
+                                {auction.propertyType}
+                            </span>
                         </div>
 
-                        {/* Bank Display */}
-                        <div className="flex items-center gap-2 text-[14px] text-slate-600 mb-4 font-medium">
-                            <div className="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-3 max-w-md">
+                            <div>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Bank Name</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">{auction.bankName}</p>
                             </div>
-                            <span className="text-slate-700 tracking-tight">{auction.bankName}</span>
-                        </div>
-
-                        {/* Schedule & Area Row */}
-                        <div className="flex items-center gap-4 text-[13px] text-slate-500 mb-2">
-                            <span className="flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-slate-300" />
-                                {dateStr}
-                            </span>
-                            <span className="text-slate-300 font-light">|</span>
-                            <span className="font-medium text-slate-600">{auction.area || 'N/A'}</span>
-                        </div>
-
-                        {/* Secondary status row (Possession) */}
-                        <div className="flex items-center gap-2 text-[13px] text-slate-500">
-                            <span className="text-slate-300 font-light">|</span>
-                            <span className="font-semibold text-slate-600">
-                                {auction.possession ? (auction.possession.includes('Possession') ? auction.possession : `${auction.possession} Possession`) : 'Contact for Possession'}
-                            </span>
+                            <div>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Auction Date</p>
+                                <p className="text-sm font-bold text-slate-700">{dateStr}</p>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Price & Action Section */}
-                    <div className="flex flex-col items-start sm:items-end justify-between sm:w-52 shrink-0 py-1">
-                        <div className="text-2xl font-black text-[#158944] tracking-tight">
-                            ₹{new Intl.NumberFormat('en-IN').format(auction.reservePrice)}
+                    {/* Pricing & CTA */}
+                    <div className="flex flex-col justify-between items-end min-w-[180px]">
+                        <div className="text-right">
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Reserve Price</p>
+                            <div className="text-2xl font-black text-[#158944] flex items-center justify-end gap-1">
+                                <IndianRupee className="w-5 h-5" />
+                                ₹{new Intl.NumberFormat('en-IN').format(auction.reservePrice)}
+                            </div>
                         </div>
 
                         <Link
@@ -116,61 +114,70 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
     return (
         <div className="group flex flex-col bg-white rounded-2xl border border-slate-100 hover:border-brand-blue/20 hover:shadow-2xl hover:shadow-brand-blue/8 transition-all duration-300 overflow-hidden h-full">
 
-            {/* Gradient Header */}
-            <div className={`h-32 bg-gradient-to-br ${style.gradient} relative overflow-hidden flex-shrink-0`}>
-                {/* Watermark Icon */}
-                <TypeIcon className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
-                {/* Gavel watermark */}
-                <Gavel className="absolute top-3 right-3 w-5 h-5 text-white/20" />
+            {/* Header with Image or Gradient */}
+            <div className={`relative h-44 flex-shrink-0 overflow-hidden`}>
+                {imageUrl && !imageError ? (
+                    <img
+                        src={imageUrl}
+                        alt={auction.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        onError={() => setImageError(true)}
+                    />
+                ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${style.gradient} relative`}>
+                        <TypeIcon className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
+                        <Gavel className="absolute top-3 right-3 w-5 h-5 text-white/20" />
+                    </div>
+                )}
+
+                {/* Overlays */}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
 
                 {/* Type badge */}
-                <span className={`absolute top-3 left-3 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${style.tag}`}>
+                <span className={`absolute top-3 left-3 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${style.tag}`}>
                     {auction.propertyType}
                 </span>
 
                 {/* Date pill */}
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/30 backdrop-blur-md text-white text-[9px] font-bold px-2.5 py-1 rounded-full border border-white/10">
+                <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full border border-white/20 uppercase tracking-widest shadow-sm">
                     <Calendar className="w-2.5 h-2.5" />
                     {dateStr}
                 </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex flex-col p-4">
+            <div className="flex-1 flex flex-col p-5">
                 {/* Bank + City */}
-                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 mb-2">
-                    <span className="flex items-center gap-1 truncate mr-2">
-                        <Building2 className="w-3 h-3 flex-shrink-0 text-slate-300" />
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">
+                    <span className="flex items-center gap-1.5 truncate mr-2">
+                        <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue" />
                         <span className="truncate">{auction.bankName}</span>
                     </span>
-                    <span className="flex items-center gap-0.5 flex-shrink-0">
-                        <MapPin className="w-3 h-3 text-slate-300" />
+                    <span className="flex items-center gap-1 flex-shrink-0">
+                        <MapPin className="w-3 h-3 text-brand-blue" />
                         {auction.cityName}
                     </span>
                 </div>
 
                 {/* Title */}
-                <Link to={`/auctions/${auction.id}`} className="flex-1 mb-3">
-                    <h3 className="text-sm font-black text-brand-dark line-clamp-2 leading-snug group-hover:text-brand-blue transition-colors uppercase tracking-tight">
+                <Link to={`/auctions/${auction.id}`} className="flex-1 mb-4">
+                    <h3 className="text-[15px] font-black text-brand-dark line-clamp-2 leading-tight group-hover:text-brand-blue transition-colors uppercase tracking-tight">
                         {auction.title}
                     </h3>
                 </Link>
 
-                {/* Divider */}
-                <div className="w-full h-px bg-slate-50 mb-3" />
-
-                {/* Price row */}
-                <div className="flex items-end justify-between mb-4">
+                {/* Pricing row */}
+                <div className="flex items-end justify-between mb-5 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                     <div>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Reserve Price</p>
-                        <div className="flex items-center gap-0.5 text-brand-dark font-black text-base">
-                            <IndianRupee className="w-3.5 h-3.5" />
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Reserve Price</p>
+                        <div className="flex items-center gap-0.5 text-brand-dark font-black text-lg leading-none">
+                            <IndianRupee className="w-4 h-4 text-brand-blue" />
                             {formatPrice(auction.reservePrice)}
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-0.5">EMD</p>
-                        <div className="flex items-center gap-0.5 text-slate-500 font-bold text-sm">
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">EMD Amt</p>
+                        <div className="flex items-center gap-0.5 text-slate-500 font-bold text-sm leading-none">
                             <IndianRupee className="w-3 h-3" />
                             {formatPrice(auction.emdAmount)}
                         </div>
@@ -180,9 +187,9 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
                 {/* CTA */}
                 <Link
                     to={`/auctions/${auction.id}`}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200 text-brand-dark font-black text-[10px] uppercase tracking-widest hover:bg-brand-dark hover:text-white hover:border-brand-dark transition-all duration-300 group-hover:shadow-md"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-brand-dark text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-brand-blue transition-all duration-300 shadow-lg shadow-brand-dark/10 group-hover:shadow-brand-blue/20"
                 >
-                    View Details <ArrowUpRight className="w-3.5 h-3.5" />
+                    View Property <ArrowUpRight className="w-4 h-4" />
                 </Link>
             </div>
         </div>

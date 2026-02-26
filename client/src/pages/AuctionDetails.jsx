@@ -125,23 +125,17 @@ const AuctionDetails = () => {
                         </div>
 
                         {/* Image Section - Only shown if an image is actually uploaded */}
-                        {auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                        {(auction.imageUrl || (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i))) && (
                             <div className="space-y-4">
                                 <div className="relative rounded-lg overflow-hidden border border-slate-100 shadow-sm">
                                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-                                        <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm">Front View</span>
+                                        <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm uppercase tracking-widest">Property Preview</span>
                                     </div>
                                     <img
-                                        src={getFileUrl(auction.noticeUrl)}
-                                        alt="Property Front View"
+                                        src={auction.imageUrl ? getFileUrl(auction.imageUrl) : getFileUrl(auction.noticeUrl)}
+                                        alt="Property View"
                                         className="w-full aspect-[16/7] object-cover"
                                     />
-                                </div>
-                                {/* Thumbnails */}
-                                <div className="flex gap-2">
-                                    <div className="w-20 h-20 rounded-md border-2 border-brand-blue overflow-hidden cursor-pointer">
-                                        <img src={getFileUrl(auction.noticeUrl)} className="w-full h-full object-cover" alt="tab" />
-                                    </div>
                                 </div>
                             </div>
                         )}

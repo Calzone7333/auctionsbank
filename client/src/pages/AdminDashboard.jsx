@@ -22,7 +22,8 @@ import {
     Settings,
     Sparkles,
     Zap,
-    Trash2
+    Trash2,
+    Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -62,9 +63,12 @@ const AdminDashboard = () => {
         inspectionDate: '',
         bankContactDetails: '',
         possession: '',
-        noticeUrl: ''
+        noticeUrl: '',
+        imageUrl: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
     const [autoFillText, setAutoFillText] = useState('');
 
     const handleAutoFill = () => {
@@ -190,6 +194,18 @@ const AdminDashboard = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedImage(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setFormLoading(true);
@@ -200,21 +216,29 @@ const AdminDashboard = () => {
             if (selectedFile) {
                 const uploadData = new FormData();
                 uploadData.append('file', selectedFile);
-
                 const uploadRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${user.token}`
-                        // Note: do not set Content-Type header when using FormData; the browser will automatically add the correct boundary
-                    },
+                    headers: { 'Authorization': `Bearer ${user.token}` },
                     body: uploadData
                 });
-
                 if (uploadRes.ok) {
                     const uploadResult = await uploadRes.json();
                     uploadedFileUrl = uploadResult.url;
-                } else {
-                    alert('File upload failed. Proceeding without file.');
+                }
+            }
+
+            let uploadedImageUrl = formData.imageUrl;
+            if (selectedImage) {
+                const uploadData = new FormData();
+                uploadData.append('file', selectedImage);
+                const uploadRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${user.token}` },
+                    body: uploadData
+                });
+                if (uploadRes.ok) {
+                    const uploadResult = await uploadRes.json();
+                    uploadedImageUrl = uploadResult.url;
                 }
             }
 
@@ -223,7 +247,7 @@ const AdminDashboard = () => {
                 ? `${API_BASE_URL}/auctions/${editingAuctionId}`
                 : `${API_BASE_URL}/auctions`;
 
-            const finalFormData = { ...formData, noticeUrl: uploadedFileUrl };
+            const finalFormData = { ...formData, noticeUrl: uploadedFileUrl, imageUrl: uploadedImageUrl };
 
             // Convert empty strings to null for backend compatibility
             ['emdLastDate', 'auctionDate', 'auctionEndDate', 'inspectionDate'].forEach(key => {
@@ -268,9 +292,12 @@ const AdminDashboard = () => {
                     inspectionDate: '',
                     bankContactDetails: '',
                     possession: '',
-                    noticeUrl: ''
+                    noticeUrl: '',
+                    imageUrl: '' // Add this
                 });
                 setSelectedFile(null);
+                setSelectedImage(null); // Add this
+                setImagePreview(null); // Add this
                 setEditingAuctionId(null);
                 setActiveTab(isEditing ? 'my-auctions' : 'auctions');
 
@@ -771,44 +798,80 @@ const AdminDashboard = () => {
                                             </div>
                                         </div>
 
-                                        {/* Row 7: Bank Contact & File */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Row 8: Property Image & Auction PDF */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
-                                                <input
-                                                    type="text"
-                                                    name="bankContactDetails"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                    placeholder="Officer Name & Phone"
-                                                    value={formData.bankContactDetails}
-                                                    onChange={handleFormChange}
-                                                />
+                                                <label className="block text-xs font-black text-brand-dark mb-2 uppercase tracking-[0.15em]">Property Image (Display)</label>
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="relative group w-full aspect-video rounded-lg border-2 border-dashed border-slate-200 bg-white overflow-hidden flex items-center justify-center hover:border-brand-blue/50 transition-all cursor-pointer">
+                                                        {imagePreview || formData.imageUrl ? (
+                                                            <img
+                                                                src={imagePreview || getFileUrl(formData.imageUrl)}
+                                                                className="w-full h-full object-cover"
+                                                                alt="Preview"
+                                                            />
+                                                        ) : (
+                                                            <div className="text-center">
+                                                                <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-1" />
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Click to upload image</span>
+                                                            </div>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            onChange={handleImageChange}
+                                                        />
+                                                    </div>
+                                                    {imagePreview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                                                            className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 w-fit"
+                                                        >
+                                                            Remove Selected Image
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Download Auction File (Image/PDF)</label>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*,application/pdf"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                                                />
-                                                {formData.noticeUrl && !selectedFile && (
-                                                    <p className="text-xs text-brand-blue mt-1">
-                                                        Current file: <a href={getFileUrl(formData.noticeUrl)} target="_blank" rel="noreferrer" className="underline overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-xs align-bottom">View existing file</a>
-                                                    </p>
-                                                )}
+                                            <div className="flex flex-col justify-end pb-1">
+                                                <label className="block text-xs font-black text-brand-dark mb-2 uppercase tracking-[0.15em]">Auction Notice (PDF/Image)</label>
+                                                <div className="p-4 bg-white rounded-lg border border-slate-200 border-dashed">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        className="w-full text-[11px] font-medium text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer"
+                                                        onChange={(e) => setSelectedFile(e.target.files[0])}
+                                                    />
+                                                    {formData.noticeUrl && !selectedFile && (
+                                                        <div className="mt-3 flex items-center gap-2">
+                                                            <div className="w-8 h-10 bg-slate-100 rounded flex items-center justify-center">
+                                                                <FileCheck className="w-4 h-4 text-brand-blue" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Attached Document</p>
+                                                                <a href={getFileUrl(formData.noticeUrl)} target="_blank" rel="noreferrer" className="text-xs text-brand-blue font-bold truncate block hover:underline">
+                                                                    View Current File
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                                        <div className="flex justify-between items-center pt-8 border-t border-slate-100">
                                             {editingAuctionId ? (
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         setEditingAuctionId(null);
                                                         setFormData({
-                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', possession: '', noticeUrl: ''
+                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: ''
                                                         });
+                                                        setSelectedFile(null);
+                                                        setSelectedImage(null);
+                                                        setImagePreview(null);
                                                         setActiveTab('my-auctions');
                                                     }}
                                                     className="px-6 py-3 font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest"
@@ -978,8 +1041,10 @@ const AdminDashboard = () => {
                                                                     inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
                                                                     bankContactDetails: auction.bankContactDetails || '',
                                                                     possession: auction.possession || 'Symbolic',
-                                                                    noticeUrl: auction.noticeUrl || ''
+                                                                    noticeUrl: auction.noticeUrl || '',
+                                                                    imageUrl: auction.imageUrl || ''
                                                                 });
+                                                                setImagePreview(null); // Clear preview for edit
                                                                 setActiveTab('post-auction');
                                                             }}
                                                             className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"

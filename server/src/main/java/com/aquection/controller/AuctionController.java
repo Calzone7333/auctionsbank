@@ -125,6 +125,7 @@ public class AuctionController {
             auction.setEmdAmount(updatedAuction.getEmdAmount());
             auction.setAuctionDate(updatedAuction.getAuctionDate());
             auction.setNoticeUrl(updatedAuction.getNoticeUrl());
+            auction.setImageUrl(updatedAuction.getImageUrl());
             auction.setBorrowerName(updatedAuction.getBorrowerName());
             auction.setLocation(updatedAuction.getLocation());
             auction.setLocality(updatedAuction.getLocality());

@@ -42,6 +42,7 @@ public class Auction {
     private LocalDateTime auctionEndDate;
 
     private String noticeUrl;
+    private String imageUrl;
 
     // Detailed Fields
     private String borrowerName;
