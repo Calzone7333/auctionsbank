@@ -47,7 +47,7 @@ const AdminDashboard = () => {
         description: '',
         borrowerName: '',
         bankName: '',
-        propertyType: 'Flat and Floor',
+        propertyType: '',
         location: '',
         area: '',
         locality: '',
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
         auctionEndDate: '',
         inspectionDate: '',
         bankContactDetails: '',
-        possession: 'Symbolic',
+        possession: '',
         noticeUrl: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
@@ -77,79 +77,108 @@ const AdminDashboard = () => {
             return match ? match[1].trim() : null;
         };
 
-        // Bank Name
+        const parseDateTime = (fieldLabel) => {
+            // Robust regex to capture Date and optional Time specifically after a label
+            // Handles formats like "Label: 12.03.2026 11:00 AM" or "Label: 12/03/2026 at 11:00 AM"
+            const regex = new RegExp(`${fieldLabel}:?\\s*(\\d{2})[./-](\\d{2})[./-](\\d{4})(?:\\s*(?:at|from|on|@)?\\s*(\\d{1,2}:\\d{2}\\s*[APM]{2}))?`, 'i');
+            const match = autoFillText.match(regex);
+            if (match) {
+                const [_, d, m, y, time] = match;
+                let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                if (time) {
+                    let t = time.trim();
+                    let [timePart, modifier] = t.split(/\s+/);
+                    let [hours, minutes] = timePart.split(':');
+                    let h = parseInt(hours, 10);
+                    if (modifier && modifier.toUpperCase() === 'PM' && h < 12) h += 12;
+                    if (modifier && modifier.toUpperCase() === 'AM' && h === 12) h = 0;
+                    dateStr += `T${h.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+                } else {
+                    // No time found, default to start of day for valid datetime-local format
+                    dateStr += `T00:00`;
+                }
+                return dateStr;
+            }
+            return null;
+        };
+
+        // Bank & Borrower
         const bank = extract(/Bank Name:\s*(.*)/i);
         if (bank) data.bankName = bank;
 
-        // Borrower Name
         const borrower = extract(/Borrower Name:\s*(.*)/i);
         if (borrower) data.borrowerName = borrower;
 
-        // Property Type
+        // Property Type Mapping
         const type = extract(/Property Type:\s*(.*)/i);
         if (type) {
-            // Rough mapping
-            if (type.toLowerCase().includes('residential')) data.propertyType = 'House and Residential Plot';
-            else if (type.toLowerCase().includes('land')) data.propertyType = 'Land, Plot and Site';
-            else if (type.toLowerCase().includes('commercial')) data.propertyType = 'All Commercial';
-            else if (type.toLowerCase().includes('office')) data.propertyType = 'Office';
+            const tl = type.toLowerCase();
+            if (tl.includes('flat') || tl.includes('floor')) data.propertyType = 'Flat and Floor';
+            else if (tl.includes('residential') || tl.includes('house')) data.propertyType = 'House and Residential Plot';
+            else if (tl.includes('land') || tl.includes('plot') || tl.includes('site')) data.propertyType = 'Land, Plot and Site';
+            else if (tl.includes('commercial')) data.propertyType = 'All Commercial';
+            else if (tl.includes('office')) data.propertyType = 'Office';
+            else if (tl.includes('shop')) data.propertyType = 'Shop';
+            else if (tl.includes('industrial') || tl.includes('shed')) data.propertyType = 'Industrial Plots, Land & Sheds';
+            else if (tl.includes('factory')) data.propertyType = 'Factory Land & buildings';
+            else if (tl.includes('car')) data.propertyType = 'Car';
+            else if (tl.includes('plant') || tl.includes('machinery')) data.propertyType = 'Plant and Machinery';
         }
 
-        // Location
-        const location = extract(/Property Location:\s*(.*)/i);
-        if (location) {
-            data.location = location;
-            // Extract city (often the last part)
-            const parts = location.split(',');
-            if (parts.length > 0) {
+        // Description
+        const desc = extract(/Description:\s*(.*)/i);
+        if (desc) data.description = desc;
+
+        // Location & City
+        const loc = extract(/Location:\s*(.*)/i) || extract(/Property Location:\s*(.*)/i);
+        if (loc) {
+            data.location = loc;
+            // Extract city from location if city not explicitly provided
+            const parts = loc.split(',');
+            if (parts.length > 1) {
                 const cityPart = parts[parts.length - 1].split('-')[0].trim();
                 data.cityName = cityPart;
             }
         }
 
         // Area
-        const areaRes = extract(/Building Area.*:\s*(.*)/i) || extract(/Total Land Area:\s*(.*)/i) || extract(/Property Dimensions:\s*(.*)/i);
-        if (areaRes) data.area = areaRes;
+        const area = extract(/Area:\s*(.*)/i) || extract(/Building Area.*:\s*(.*)/i) || extract(/Total Land Area:\s*(.*)/i) || extract(/Property Dimensions:\s*(.*)/i);
+        if (area) data.area = area;
 
-        // Reserve Price
+        // Locality
+        const locality = extract(/Locality:\s*(.*)/i);
+        if (locality) data.locality = locality;
+
+        // City (Explicit)
+        const city = extract(/City:\s*(.*)/i);
+        if (city) data.cityName = city;
+
+        // Financials
         const rp = extract(/Reserve Price:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
         if (rp) data.reservePrice = rp.replace(/,/g, '');
 
-        // EMD Amount
-        const emd = extract(/EMD Amount.*:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
-        if (emd) data.emdAmount = emd.replace(/,/g, '');
+        const emdVal = extract(/EMD Amount.*:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        if (emdVal) data.emdAmount = emdVal.replace(/,/g, '');
 
-        // Bid Increment
         const bi = extract(/Bid Increment:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
         if (bi) data.bidIncrement = bi.replace(/,/g, '');
 
         // Bank Contact
-        const contact = extract(/Bank Contact Details:\s*(.*)/i);
-        const email = extract(/Bank Email:\s*(.*)/i);
+        const contact = extract(/Bank Contact Details:\s*(.*)/i) || extract(/Contact:\s*(.*)/i);
+        const email = extract(/Bank Email:\s*(.*)/i) || extract(/Email:\s*(.*)/i);
         if (contact || email) {
             data.bankContactDetails = `${contact || ''} ${email ? `| Email: ${email}` : ''}`.trim();
         }
 
-        // Date Parsing (Rough)
-        // Format example: 17.03.2026 from 11:00 AM
-        const dateMatch = autoFillText.match(/Auction Date & Time:\s*(\d{2})[./](\d{2})[./](\d{4})/i);
-        const timeMatch = autoFillText.match(/(\d{1,2}:\d{2}\s*[APM]{2})/i);
+        // Dates - improved extraction
+        const emdDate = parseDateTime('EMD Submission Date') || parseDateTime('EMD Last Date');
+        if (emdDate) data.emdLastDate = emdDate;
 
-        if (dateMatch) {
-            const [_, d, m, y] = dateMatch;
-            let dateStr = `${y}-${m}-${d}`;
-            if (timeMatch) {
-                // Convert AM/PM to 24h
-                let [time, modifier] = timeMatch[1].split(' ');
-                let [hours, minutes] = time.split(':');
-                if (hours === '12') hours = '00';
-                if (modifier.toUpperCase() === 'PM') hours = parseInt(hours, 10) + 12;
-                dateStr += `T${hours.toString().padStart(2, '0')}:${minutes}`;
-            } else {
-                dateStr += `T10:00`; // Default
-            }
-            data.auctionDate = dateStr;
-        }
+        const auctionStart = parseDateTime('Auction Start Date & Time') || parseDateTime('Auction Date & Time') || parseDateTime('Auction Date');
+        if (auctionStart) data.auctionDate = auctionStart;
+
+        const auctionEnd = parseDateTime('Auction End Date & Time') || parseDateTime('Auction End Date');
+        if (auctionEnd) data.auctionEndDate = auctionEnd;
 
         setFormData(data);
         alert('Magic Auto-Fill completed! Please review the fields.');
@@ -195,6 +224,14 @@ const AdminDashboard = () => {
 
             const finalFormData = { ...formData, noticeUrl: uploadedFileUrl };
 
+            // Convert empty strings to null for backend compatibility
+            ['emdLastDate', 'auctionDate', 'auctionEndDate', 'inspectionDate'].forEach(key => {
+                if (finalFormData[key] === '') finalFormData[key] = null;
+            });
+            ['reservePrice', 'emdAmount', 'bidIncrement'].forEach(key => {
+                if (finalFormData[key] === '') finalFormData[key] = null;
+            });
+
             // Auto-generate hidden title/description if the user has omitted them from the UI
             if (!finalFormData.title) {
                 finalFormData.title = `${finalFormData.propertyType || 'Property'} at ${finalFormData.cityName || 'Location'}`;
@@ -216,7 +253,7 @@ const AdminDashboard = () => {
                     description: '',
                     borrowerName: '',
                     bankName: '',
-                    propertyType: 'Flat and Floor',
+                    propertyType: '',
                     location: '',
                     area: '',
                     locality: '',
@@ -229,7 +266,7 @@ const AdminDashboard = () => {
                     auctionEndDate: '',
                     inspectionDate: '',
                     bankContactDetails: '',
-                    possession: 'Symbolic',
+                    possession: '',
                     noticeUrl: ''
                 });
                 setSelectedFile(null);
@@ -547,6 +584,7 @@ const AdminDashboard = () => {
                                                     value={formData.propertyType}
                                                     onChange={handleFormChange}
                                                 >
+                                                    <option value="">Select Property Type</option>
                                                     <option value="Flat and Floor">Flat and Floor</option>
                                                     <option value="House and Residential Plot">House and Residential Plot</option>
                                                     <option value="Land, Plot and Site">Land, Plot and Site</option>
@@ -608,6 +646,7 @@ const AdminDashboard = () => {
                                                     value={formData.possession}
                                                     onChange={handleFormChange}
                                                 >
+                                                    <option value="">Select Possession Status</option>
                                                     <option value="Symbolic">Symbolic Possession</option>
                                                     <option value="Physical">Physical Possession</option>
                                                 </select>
@@ -743,7 +782,7 @@ const AdminDashboard = () => {
                                                     onClick={() => {
                                                         setEditingAuctionId(null);
                                                         setFormData({
-                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: 'Flat and Floor', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', noticeUrl: ''
+                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', possession: '', noticeUrl: ''
                                                         });
                                                         setActiveTab('my-auctions');
                                                     }}

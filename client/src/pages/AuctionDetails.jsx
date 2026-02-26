@@ -77,8 +77,11 @@ const AuctionDetails = () => {
     const formatCurrency = (amount) =>
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
-    const formatDate = (dateString) =>
-        new Date(dateString).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const formatDate = (dateString) => {
+        if (!dateString) return 'NA';
+        const d = new Date(dateString);
+        return isNaN(d.getTime()) ? 'NA' : d.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    };
 
     return (
         <div className="bg-white min-h-screen font-sans text-slate-800">

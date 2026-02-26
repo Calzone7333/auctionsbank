@@ -18,9 +18,10 @@ const formatPrice = (num) =>
 const AuctionCard = ({ auction, viewMode = 'grid' }) => {
     const style = getPropertyStyle(auction.propertyType);
     const TypeIcon = style.icon;
-    const dateStr = new Date(auction.auctionDate).toLocaleDateString('en-IN', {
-        day: 'numeric', month: 'short', year: 'numeric'
-    });
+    const dateObj = auction.auctionDate ? new Date(auction.auctionDate) : null;
+    const dateStr = (dateObj && !isNaN(dateObj.getTime()))
+        ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'NA';
 
     /* ─── LIST VIEW ─── */
     if (viewMode === 'list') {
