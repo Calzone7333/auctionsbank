@@ -148,12 +148,15 @@ public class AuctionController {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         System.out.println("Request by user: " + userDetails.getUsername());
         return auctionRepository.findById(id).map(auction -> {
-            if (!auction.getCreatedByEmail().equals(userDetails.getUsername())) {
+            // Check if the current user is the creator
+            String creatorEmail = auction.getCreatedByEmail();
+            if (creatorEmail != null && !creatorEmail.equals(userDetails.getUsername())) {
                 return ResponseEntity.status(403).body("You can only delete auctions you created.");
             }
-            // Soft delete
-            auction.setActive(false);
-            auctionRepository.save(auction);
+
+            // Perform Hard Delete (remove from database)
+            auctionRepository.delete(auction);
+            System.out.println("Auction ID " + id + " deleted from database.");
             return ResponseEntity.ok("Auction deleted successfully");
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
