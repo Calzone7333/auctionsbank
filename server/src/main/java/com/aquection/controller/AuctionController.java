@@ -19,7 +19,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auctions")
-@CrossOrigin(origins = { "http://localhost:5173", "https://madrasauction.com" }) // Allow frontend access
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174",
+        "https://madrasauction.com" }, allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
+                RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS })
 public class AuctionController {
 
     @Autowired
@@ -142,7 +144,9 @@ public class AuctionController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
+        System.out.println("Delete request received for auction ID: " + id);
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Request by user: " + userDetails.getUsername());
         return auctionRepository.findById(id).map(auction -> {
             if (!auction.getCreatedByEmail().equals(userDetails.getUsername())) {
                 return ResponseEntity.status(403).body("You can only delete auctions you created.");

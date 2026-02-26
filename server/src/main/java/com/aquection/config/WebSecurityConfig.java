@@ -71,8 +71,11 @@ public class WebSecurityConfig {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         configuration.setAllowedOrigins(java.util.Arrays.asList(
                 "http://localhost:5173",
+                "http://127.0.0.1:5173",
                 "http://localhost:5174",
+                "http://127.0.0.1:5174",
                 "http://localhost:3000",
+                "http://127.0.0.1:3000",
                 "http://10.173.126.100:5173",
                 "https://madrasauction.com",
                 "http://madrasauction.com",
