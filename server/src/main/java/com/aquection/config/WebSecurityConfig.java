@@ -63,7 +63,11 @@ public class WebSecurityConfig {
                                         "font-src 'self' https://fonts.gstatic.com; " +
                                         "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://stats.g.doubleclick.net; "
                                         +
-                                        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;")))
+                                        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;"))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Embedder-Policy", "unsafe-none"))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Opener-Policy", "unsafe-none")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
