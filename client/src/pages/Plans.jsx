@@ -18,16 +18,6 @@ const Plans = () => {
         { icon: Zap, text: 'Early Access to New Auction Listings' }
     ];
 
-    const loadScript = (src) => {
-        return new Promise((resolve) => {
-            const script = document.createElement("script");
-            script.src = src;
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        });
-    };
-
     const handlePayment = async () => {
         if (!user) {
             alert('Please login to purchase a premium plan');
@@ -42,11 +32,8 @@ const Plans = () => {
         setIsProcessing(true);
 
         try {
-            // Load Razorpay Script
-            const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
-
-            if (!res) {
-                alert("Razorpay SDK failed to load. Are you online?");
+            if (!window.Razorpay) {
+                alert("Razorpay SDK is not loaded. Please check your internet or refresh the page.");
                 setIsProcessing(false);
                 return;
             }
