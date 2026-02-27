@@ -22,6 +22,7 @@ const Plans = () => {
         return new Promise((resolve) => {
             const script = document.createElement("script");
             script.src = src;
+            script.crossOrigin = "anonymous";
             script.onload = () => resolve(true);
             script.onerror = () => resolve(false);
             document.body.appendChild(script);
@@ -235,9 +236,9 @@ const Plans = () => {
 
                 {/* Trust Badges */}
                 <div className="mt-16 flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-40 grayscale">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-6" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg" alt="Visa" className="h-4" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-6" crossOrigin="anonymous" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" crossOrigin="anonymous" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Visa_Logo.png" alt="Visa" className="h-4" crossOrigin="anonymous" />
                     <span className="text-sm font-black tracking-widest uppercase text-slate-900 italic">RAZORPAY</span>
                 </div>
             </div>
