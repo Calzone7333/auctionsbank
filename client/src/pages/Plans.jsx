@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../apiConfig';
 import { useNavigate } from 'react-router-dom';
 
 const Plans = () => {
-    const { user, refreshUser } = useAuth();
+    const { user, refreshUser, logout } = useAuth();
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -22,6 +22,7 @@ const Plans = () => {
         return new Promise((resolve) => {
             const script = document.createElement("script");
             script.src = src;
+            script.crossOrigin = "anonymous";
             script.onload = () => resolve(true);
             script.onerror = () => resolve(false);
             document.body.appendChild(script);
@@ -55,6 +56,11 @@ const Plans = () => {
             const keyRes = await fetch(`${API_BASE_URL}/payments/key`, {
                 headers: { 'Authorization': `Bearer ${user.token}` }
             });
+            if (keyRes.status === 401 || keyRes.status === 403) {
+                alert('Session expired. Please login again.');
+                logout();
+                return;
+            }
             const keyData = await keyRes.json();
             const razorpayKey = keyData.key;
 
@@ -71,6 +77,12 @@ const Plans = () => {
                 },
                 body: JSON.stringify({ amount: 999 })
             });
+
+            if (orderRes.status === 401 || orderRes.status === 403) {
+                alert('Session expired. Please login again.');
+                logout();
+                return;
+            }
 
             if (!orderRes.ok) throw new Error('Failed to create order');
             const orderData = await orderRes.json();
@@ -224,9 +236,9 @@ const Plans = () => {
 
                 {/* Trust Badges */}
                 <div className="mt-16 flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-40 grayscale">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-6" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-6" crossOrigin="anonymous" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" crossOrigin="anonymous" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" className="h-4" crossOrigin="anonymous" />
                     <span className="text-sm font-black tracking-widest uppercase text-slate-900 italic">RAZORPAY</span>
                 </div>
             </div>

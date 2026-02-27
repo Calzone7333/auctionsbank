@@ -57,9 +57,11 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        localStorage.removeItem('user');
+        localStorage.clear();
+        sessionStorage.clear();
         setUser(null);
-        window.location.href = '/';
+        // Using window.location.href to a new URL ensures a fresh start
+        window.location.href = '/?logout=' + Date.now();
     };
 
     const refreshUser = async () => {

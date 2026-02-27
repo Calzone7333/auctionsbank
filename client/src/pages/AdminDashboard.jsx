@@ -222,6 +222,11 @@ const AdminDashboard = () => {
                     headers: { 'Authorization': `Bearer ${user.token}` },
                     body: uploadData
                 });
+                if (uploadRes.status === 401 || uploadRes.status === 403) {
+                    alert('Session expired. Please login again.');
+                    logout();
+                    return;
+                }
                 if (uploadRes.ok) {
                     const uploadResult = await uploadRes.json();
                     uploadedFileUrl = uploadResult.url;
@@ -237,6 +242,11 @@ const AdminDashboard = () => {
                     headers: { 'Authorization': `Bearer ${user.token}` },
                     body: uploadData
                 });
+                if (uploadRes.status === 401 || uploadRes.status === 403) {
+                    alert('Session expired. Please login again.');
+                    logout();
+                    return;
+                }
                 if (uploadRes.ok) {
                     const uploadResult = await uploadRes.json();
                     uploadedImageUrl = uploadResult.url;
@@ -311,6 +321,9 @@ const AdminDashboard = () => {
                     const aStats = await aStatsRes.json();
                     setStats(prev => ({ ...prev, totalAuctions: aStats.totalAuctions }));
                 }
+            } else if (response.status === 401 || response.status === 403) {
+                alert('Session expired or unauthorized. Logging out...');
+                logout();
             } else {
                 alert('Failed to post auction.');
             }
