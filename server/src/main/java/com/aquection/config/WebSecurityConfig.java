@@ -53,13 +53,7 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
-                        .frameOptions(frame -> frame.disable())
-                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Opener-Policy", "same-origin-allow-popups"))
-                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Embedder-Policy", "unsafe-none"))
-                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Resource-Policy", "cross-origin")))
+                        .frameOptions(frame -> frame.disable()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
@@ -70,6 +64,16 @@ public class WebSecurityConfig {
 
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        // Add a filter to manually set headers that fix the Razorpay "refused to
+        // connect" issue
+        http.addFilterAfter((request, response, chain) -> {
+            jakarta.servlet.http.HttpServletResponse res = (jakarta.servlet.http.HttpServletResponse) response;
+            res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
+            res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+            res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+            chain.doFilter(request, response);
+        }, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
