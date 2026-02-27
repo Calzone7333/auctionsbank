@@ -55,7 +55,11 @@ public class WebSecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())
                         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Opener-Policy", "same-origin-allow-popups")))
+                                "Cross-Origin-Opener-Policy", "same-origin-allow-popups"))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Embedder-Policy", "unsafe-none"))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Resource-Policy", "cross-origin")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
