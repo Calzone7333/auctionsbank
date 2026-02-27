@@ -54,20 +54,12 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; " +
-                                        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.googletagmanager.com; "
-                                        +
-                                        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-                                        "img-src 'self' data: https:; " +
-                                        "font-src 'self' https://fonts.gstatic.com; " +
-                                        "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://stats.g.doubleclick.net; "
-                                        +
-                                        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;"))
                         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
                                 "Cross-Origin-Embedder-Policy", "unsafe-none"))
                         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Opener-Policy", "unsafe-none")))
+                                "Cross-Origin-Opener-Policy", "unsafe-none"))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Resource-Policy", "cross-origin")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
