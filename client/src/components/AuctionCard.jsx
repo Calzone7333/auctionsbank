@@ -94,7 +94,7 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Reserve Price</p>
                             <div className="text-2xl font-black text-[#158944] flex items-center justify-end gap-1">
                                 <IndianRupee className="w-5 h-5" />
-                                ₹{new Intl.NumberFormat('en-IN').format(auction.reservePrice)}
+                                {new Intl.NumberFormat('en-IN').format(auction.reservePrice)}
                             </div>
                         </div>
 
