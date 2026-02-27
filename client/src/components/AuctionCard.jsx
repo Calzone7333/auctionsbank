@@ -26,13 +26,8 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
 
     const [imageError, setImageError] = React.useState(false);
 
-    // Image logic: Prioritize imageUrl, fallback to noticeUrl if it's an image
-    let imageUrl = null;
-    if (auction.imageUrl) {
-        imageUrl = getFileUrl(auction.imageUrl);
-    } else if (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-        imageUrl = getFileUrl(auction.noticeUrl);
-    }
+    // Image logic: Use ONLY imageUrl
+    const imageUrl = auction.imageUrl ? getFileUrl(auction.imageUrl) : null;
 
     /* ─── LIST VIEW ─── */
     if (viewMode === 'list') {
@@ -114,36 +109,43 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
     return (
         <div className="group flex flex-col bg-white rounded-2xl border border-slate-100 hover:border-brand-blue/20 hover:shadow-2xl hover:shadow-brand-blue/8 transition-all duration-300 overflow-hidden h-full">
 
-            {/* Header with Image or Gradient */}
-            <div className={`relative h-44 flex-shrink-0 overflow-hidden`}>
-                {imageUrl && !imageError ? (
+            {/* Header with Image */}
+            {imageUrl && !imageError ? (
+                <div className="relative h-44 flex-shrink-0 overflow-hidden">
                     <img
                         src={imageUrl}
                         alt={auction.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         onError={() => setImageError(true)}
                     />
-                ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${style.gradient} relative`}>
-                        <TypeIcon className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
-                        <Gavel className="absolute top-3 right-3 w-5 h-5 text-white/20" />
+
+                    {/* Overlays */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
+
+                    {/* Type badge */}
+                    <span className={`absolute top-3 left-3 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${style.tag}`}>
+                        {auction.propertyType}
+                    </span>
+
+                    {/* Date pill */}
+                    <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full border border-white/20 uppercase tracking-widest shadow-sm">
+                        <Calendar className="w-2.5 h-2.5" />
+                        {dateStr}
                     </div>
-                )}
-
-                {/* Overlays */}
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
-
-                {/* Type badge */}
-                <span className={`absolute top-3 left-3 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${style.tag}`}>
-                    {auction.propertyType}
-                </span>
-
-                {/* Date pill */}
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full border border-white/20 uppercase tracking-widest shadow-sm">
-                    <Calendar className="w-2.5 h-2.5" />
-                    {dateStr}
                 </div>
-            </div>
+            ) : (
+                <div className="px-5 pt-5">
+                    <div className="flex items-center gap-3">
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${style.tag}`}>
+                            {auction.propertyType}
+                        </span>
+                        <div className="flex items-center gap-1 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                            <Calendar className="w-2.5 h-2.5" />
+                            {dateStr}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Body */}
             <div className="flex-1 flex flex-col p-5">

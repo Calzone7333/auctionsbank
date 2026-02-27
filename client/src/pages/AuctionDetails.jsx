@@ -136,14 +136,14 @@ const AuctionDetails = () => {
                         </div>
 
                         {/* Image Section - Only shown if an image is actually uploaded and not broken */}
-                        {(auction.imageUrl || (auction.noticeUrl && auction.noticeUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i))) && !imageError && (
+                        {auction.imageUrl && !imageError && (
                             <div className="space-y-4">
                                 <div className="relative rounded-lg overflow-hidden border border-slate-100 shadow-sm">
                                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
                                         <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm uppercase tracking-widest">Property Preview</span>
                                     </div>
                                     <img
-                                        src={auction.imageUrl ? getFileUrl(auction.imageUrl) : getFileUrl(auction.noticeUrl)}
+                                        src={getFileUrl(auction.imageUrl)}
                                         alt="Property View"
                                         className="w-full aspect-[16/7] object-cover"
                                         onError={() => setImageError(true)}

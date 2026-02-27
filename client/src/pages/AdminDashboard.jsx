@@ -813,6 +813,21 @@ const AdminDashboard = () => {
                                             </div>
                                         </div>
 
+                                        {/* Row 7: Bank Contact Details */}
+                                        <div className="grid grid-cols-1 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
+                                                <input
+                                                    type="text"
+                                                    name="bankContactDetails"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    placeholder="Enter bank contact persons, phone numbers, or emails"
+                                                    value={formData.bankContactDetails}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                        </div>
+
                                         {/* Row 8: Property Image & Auction PDF */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200">
                                             <div>
