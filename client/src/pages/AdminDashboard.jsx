@@ -387,7 +387,12 @@ const AdminDashboard = () => {
                     headers: { 'Authorization': `Bearer ${user.token}` }
                 })
                     .then(res => res.json())
-                    .then(data => setAllAuctions(data))
+                    .then(data => {
+                        const sortedData = Array.isArray(data)
+                            ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                            : [];
+                        setAllAuctions(sortedData);
+                    })
                     .catch(err => console.error("Error fetching auctions:", err));
             }
         }

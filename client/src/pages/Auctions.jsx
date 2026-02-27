@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AuctionCard from '../components/AuctionCard';
 import FilterSidebar from '../components/FilterSidebar';
-import { Search, ArrowUpDown, LayoutGrid, List, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { Search, ArrowUpDown, LayoutGrid, List, ChevronDown, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE_URL } from '../apiConfig';
 
 const SkeletonCard = () => (
@@ -40,6 +40,10 @@ const Auctions = () => {
 
     const [openSections, setOpenSections] = useState({ city: true, bank: true, type: true });
     const [viewMode, setViewMode] = useState('list');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const auctionsPerPage = 10;
 
     const toggleSection = (section) =>
         setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -85,9 +89,15 @@ const Auctions = () => {
             .sort((a, b) => {
                 if (priceSort === 'asc') return a.reservePrice - b.reservePrice;
                 if (priceSort === 'desc') return b.reservePrice - a.reservePrice;
-                return 0;
+                // Default sort: Newest first (descending by ID/_id)
+                return (b._id || b.id || 0) > (a._id || a.id || 0) ? 1 : -1;
             });
     }, [auctions, searchTerm, selectedCities, selectedBanks, selectedTypes, priceSort]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedCities, selectedBanks, selectedTypes, priceSort]);
 
     const clearFilters = () => {
         setSearchTerm(''); setSelectedCities([]); setSelectedBanks([]); setSelectedTypes([]); setPriceSort('');
@@ -231,7 +241,7 @@ const Auctions = () => {
                             </div>
                         ) : filteredAuctions.length > 0 ? (
                             <div className={`grid ${viewMode === 'list' ? 'grid-cols-1 gap-0 bg-white shadow-sm' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5'}`}>
-                                {filteredAuctions.map((auction, i) => (
+                                {filteredAuctions.slice((currentPage - 1) * auctionsPerPage, currentPage * auctionsPerPage).map((auction, i) => (
                                     <motion.div
                                         key={auction.id}
                                         initial={{ opacity: 0, y: 16 }}
@@ -257,6 +267,78 @@ const Auctions = () => {
                                     className="px-8 py-3 bg-brand-dark text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-brand-blue transition-all duration-300 shadow-lg"
                                 >
                                     Reset Filters
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Pagination component */}
+                        {!loading && filteredAuctions.length > auctionsPerPage && (
+                            <div className="mt-12 flex justify-center items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(prev => Math.max(prev - 1, 1));
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    disabled={currentPage === 1}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${currentPage === 1 ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-brand-dark hover:border-brand-blue hover:text-brand-blue bg-white shadow-sm'}`}
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
+
+                                {(() => {
+                                    const totalPages = Math.ceil(filteredAuctions.length / auctionsPerPage);
+                                    const pages = [];
+
+                                    if (totalPages <= 7) {
+                                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                                    } else {
+                                        if (currentPage <= 4) {
+                                            for (let i = 1; i <= 5; i++) pages.push(i);
+                                            pages.push('...');
+                                            pages.push(totalPages);
+                                        } else if (currentPage >= totalPages - 3) {
+                                            pages.push(1);
+                                            pages.push('...');
+                                            for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                                        } else {
+                                            pages.push(1);
+                                            pages.push('...');
+                                            for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                                            pages.push('...');
+                                            pages.push(totalPages);
+                                        }
+                                    }
+
+                                    return pages.map((page, index) => (
+                                        page === '...' ? (
+                                            <span key={`ellipsis-${index}`} className="w-10 h-10 flex items-center justify-center text-slate-400">
+                                                ...
+                                            </span>
+                                        ) : (
+                                            <button
+                                                key={page}
+                                                onClick={() => {
+                                                    setCurrentPage(page);
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }}
+                                                className={`w-10 h-10 flex items-center justify-center rounded-lg border text-[14px] font-black transition-all ${currentPage === page ? 'border-brand-blue bg-white text-brand-blue ring-1 ring-brand-blue shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-brand-blue hover:text-brand-blue'}`}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    ));
+                                })()}
+
+                                <button
+                                    onClick={() => {
+                                        const totalPages = Math.ceil(filteredAuctions.length / auctionsPerPage);
+                                        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    disabled={currentPage === Math.ceil(filteredAuctions.length / auctionsPerPage)}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${currentPage === Math.ceil(filteredAuctions.length / auctionsPerPage) ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-brand-dark hover:border-brand-blue hover:text-brand-blue bg-white shadow-sm'}`}
+                                >
+                                    <ChevronRight size={18} />
                                 </button>
                             </div>
                         )}
