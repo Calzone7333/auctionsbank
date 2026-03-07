@@ -64,7 +64,7 @@ const TabContent = ({ activeTab }) => {
                 <p className="text-slate-500 leading-relaxed text-lg italic">"{current.desc}"</p>
                 <div className="space-y-4">
                     <p className="text-slate-600">
-                        At Madrasauction Property Auctions, we bridging the gap between distressed bank assets and smart investors. Our professionals bring decades of experience in real estate and legal advisory to your fingertips.
+                        A Madrasauction Property Auctions, we bridging the gap between distressed bank assets and smart investors. Our professionals bring decades of experience in real estate and legal advisory to your fingertips.
                     </p>
                 </div>
             </div>

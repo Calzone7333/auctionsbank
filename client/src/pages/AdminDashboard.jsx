@@ -23,7 +23,11 @@ import {
     Sparkles,
     Zap,
     Trash2,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +44,10 @@ const AdminDashboard = () => {
     const [allUsers, setAllUsers] = useState([]);
     const [allAuctions, setAllAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Form State for Adding/Editing Auction
     const [editingAuctionId, setEditingAuctionId] = useState(null);
@@ -364,6 +372,8 @@ const AdminDashboard = () => {
     }, [user]);
 
     useEffect(() => {
+        setCurrentPage(1); // Reset page on tab change
+
         if (activeTab === 'users' && user?.token) {
             fetch(`${API_BASE_URL}/users`, {
                 headers: { 'Authorization': `Bearer ${user.token}` }
@@ -449,23 +459,16 @@ const AdminDashboard = () => {
         navigate('/');
     };
 
-    const SidebarItem = ({ id, icon: Icon, label, count }) => (
+    const SidebarItem = ({ id, icon: Icon, label }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm ${activeTab === id
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${activeTab === id
                 ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20'
                 : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
         >
-            <div className="flex items-center gap-3">
-                <Icon className="w-5 h-5" />
-                {label}
-            </div>
-            {count !== undefined && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${activeTab === id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                    {count}
-                </span>
-            )}
+            <Icon className="w-5 h-5" />
+            {label}
         </button>
     );
 
@@ -483,9 +486,9 @@ const AdminDashboard = () => {
                 <div className="flex-1 p-4 space-y-2">
                     <SidebarItem id="overview" icon={LayoutDashboard} label="Admin Overview" />
                     <SidebarItem id="post-auction" icon={PlusSquare} label="Post Auction" />
-                    <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" count={allAuctions.filter(a => a.createdByEmail === user?.email).length} />
-                    <SidebarItem id="users" icon={Users} label="User Management" count={allUsers.length} />
-                    <SidebarItem id="auctions" icon={List} label="All Auctions" count={allAuctions.length} />
+                    <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" />
+                    <SidebarItem id="users" icon={Users} label="User Management" />
+                    <SidebarItem id="auctions" icon={List} label="All Auctions" />
 
                 </div>
             </aside>
@@ -937,79 +940,126 @@ const AdminDashboard = () => {
                         {activeTab === 'users' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
-                                        User Management
-                                        <span className="bg-purple-50 text-purple-600 text-xs font-black px-2.5 py-1 rounded-full border border-purple-200">
-                                            {allUsers.length}
-                                        </span>
-                                    </h2>
+                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">User Management</h2>
                                     <p className="text-slate-500 mt-1">View and manage registered users and their platform roles.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">User Details</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Role Access</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Date Joined</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allUsers.map((u, index) => (
-                                                <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4 text-sm font-bold text-slate-400">{index + 1}</td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black uppercase shadow-sm border border-brand-blue/20">
-                                                                {(u.fullName || 'U').charAt(0)}
+                                            {allUsers
+                                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                .map(u => (
+                                                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black uppercase shadow-sm border border-brand-blue/20">
+                                                                    {(u.fullName || 'U').charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-sm text-brand-dark">{u.fullName || 'Unassigned Name'}</p>
+                                                                    <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-bold text-sm text-brand-dark">{u.fullName || 'Unassigned Name'}</p>
-                                                                <p className="text-xs text-slate-500 font-medium">{u.email}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <select
-                                                            value={u.role}
-                                                            onChange={(e) => handleRoleUpdate(u.id, e.target.value)}
-                                                            className={`text-xs font-black px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${u.role === 'ADMIN'
-                                                                ? 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-200'
-                                                                : 'bg-slate-50 text-slate-700 border-slate-200 focus:ring-brand-blue/20 hover:bg-slate-100'
-                                                                }`}
-                                                            style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 7l5 5 5-5'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em', paddingRight: '1.75rem' }}
-                                                        >
-                                                            <option value="USER" className="font-bold text-slate-700">USER</option>
-                                                            <option value="ADMIN" className="font-bold text-purple-700">ADMIN</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm font-medium text-slate-500">
-                                                        {new Date(u.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <select
+                                                                value={u.role}
+                                                                onChange={(e) => handleRoleUpdate(u.id, e.target.value)}
+                                                                className={`text-xs font-black px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${u.role === 'ADMIN'
+                                                                    ? 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-200'
+                                                                    : 'bg-slate-50 text-slate-700 border-slate-200 focus:ring-brand-blue/20 hover:bg-slate-100'
+                                                                    }`}
+                                                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 7l5 5 5-5'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em', paddingRight: '1.75rem' }}
+                                                            >
+                                                                <option value="USER" className="font-bold text-slate-700">USER</option>
+                                                                <option value="ADMIN" className="font-bold text-purple-700">ADMIN</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm font-medium text-slate-500">
+                                                            {new Date(u.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {allUsers.length > itemsPerPage && (
+                                    <div className="flex justify-center items-center gap-2 py-6">
+                                        <button
+                                            onClick={() => setCurrentPage(1)}
+                                            disabled={currentPage === 1}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronsLeft size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronLeft size={14} />
+                                        </button>
+
+                                        {(() => {
+                                            const totalPages = Math.ceil(allUsers.length / itemsPerPage);
+                                            const pages = [];
+                                            const startPage = Math.max(1, currentPage - 2);
+                                            const endPage = Math.min(totalPages, startPage + 4);
+                                            const adjustedStart = Math.max(1, endPage - 4);
+
+                                            for (let i = adjustedStart; i <= endPage; i++) {
+                                                pages.push(
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => setCurrentPage(i)}
+                                                        className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${currentPage === i
+                                                            ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20'
+                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+                                                            }`}
+                                                    >
+                                                        {i}
+                                                    </button>
+                                                );
+                                            }
+                                            return pages;
+                                        })()}
+
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(allUsers.length / itemsPerPage)))}
+                                            disabled={currentPage === Math.ceil(allUsers.length / itemsPerPage)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronRight size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(Math.ceil(allUsers.length / itemsPerPage))}
+                                            disabled={currentPage === Math.ceil(allUsers.length / itemsPerPage)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronsRight size={14} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                         {activeTab === 'auctions' && (
                             <div className="space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
-                                        All Auctions
-                                        <span className="bg-slate-100 text-slate-500 text-xs font-black px-2.5 py-1 rounded-full border border-slate-200">
-                                            {allAuctions.length}
-                                        </span>
-                                    </h2>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">All Auctions</h2>
                                     <p className="text-sm text-slate-500 mt-1">Master catalog of all property listings.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
@@ -1017,48 +1067,101 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allAuctions.map((auction, index) => (
-                                                <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-5 py-3 text-xs font-bold text-slate-400">{index + 1}</td>
-                                                    <td className="px-5 py-3">
-                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">{auction.propertyType || auction.cityName}</p>
-                                                    </td>
-                                                    <td className="px-5 py-3">
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
-                                                            {auction.bankName}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-5 py-3 font-black text-sm text-brand-dark">
-                                                        ₹{auction.reservePrice}
-                                                    </td>
-                                                    <td className="px-5 py-3 text-xs font-medium text-slate-500">
-                                                        {new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {allAuctions
+                                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                .map(auction => (
+                                                    <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-5 py-3">
+                                                            <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">{auction.propertyType || auction.cityName}</p>
+                                                        </td>
+                                                        <td className="px-5 py-3">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
+                                                                {auction.bankName}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-5 py-3 font-black text-sm text-brand-dark">
+                                                            ₹{auction.reservePrice}
+                                                        </td>
+                                                        <td className="px-5 py-3 text-xs font-medium text-slate-500">
+                                                            {new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {allAuctions.length > itemsPerPage && (
+                                    <div className="flex justify-center items-center gap-2 py-6">
+                                        <button
+                                            onClick={() => setCurrentPage(1)}
+                                            disabled={currentPage === 1}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronsLeft size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronLeft size={14} />
+                                        </button>
+
+                                        {(() => {
+                                            const totalPages = Math.ceil(allAuctions.length / itemsPerPage);
+                                            const pages = [];
+                                            const startPage = Math.max(1, currentPage - 2);
+                                            const endPage = Math.min(totalPages, startPage + 4);
+                                            const adjustedStart = Math.max(1, endPage - 4);
+
+                                            for (let i = adjustedStart; i <= endPage; i++) {
+                                                pages.push(
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => setCurrentPage(i)}
+                                                        className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${currentPage === i
+                                                            ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20'
+                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+                                                            }`}
+                                                    >
+                                                        {i}
+                                                    </button>
+                                                );
+                                            }
+                                            return pages;
+                                        })()}
+
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(allAuctions.length / itemsPerPage)))}
+                                            disabled={currentPage === Math.ceil(allAuctions.length / itemsPerPage)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronRight size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(Math.ceil(allAuctions.length / itemsPerPage))}
+                                            disabled={currentPage === Math.ceil(allAuctions.length / itemsPerPage)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                        >
+                                            <ChevronsRight size={14} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {activeTab === 'my-auctions' && (
                             <div className="space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
-                                        Admin Auctions
-                                        <span className="bg-brand-blue/10 text-brand-blue text-xs font-black px-2.5 py-1 rounded-full border border-brand-blue/20">
-                                            {allAuctions.filter(a => a.createdByEmail === user?.email).length}
-                                        </span>
-                                    </h2>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">Admin Auctions</h2>
                                     <p className="text-sm text-slate-500 mt-1">Properties posted by you. You have full edit access to these.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
@@ -1066,67 +1169,71 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allAuctions.filter(a => a.createdByEmail === user?.email).map((auction, index) => (
-                                                <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-5 py-3 text-xs font-bold text-slate-400">{index + 1}</td>
-                                                    <td className="px-5 py-3">
-                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                        <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType} • {auction.cityName}</p>
-                                                    </td>
-                                                    <td className="px-5 py-3">
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
-                                                            {auction.bankName}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-5 py-3 font-black text-sm text-brand-dark">
-                                                        ₹{auction.reservePrice}
-                                                    </td>
-                                                    <td className="px-5 py-3 text-right">
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingAuctionId(auction.id);
-                                                                setFormData({
-                                                                    title: auction.title || '',
-                                                                    description: auction.description || '',
-                                                                    borrowerName: auction.borrowerName || '',
-                                                                    bankName: auction.bankName || '',
-                                                                    propertyType: auction.propertyType || 'Flat and Floor',
-                                                                    location: auction.location || '',
-                                                                    area: auction.area || '',
-                                                                    locality: auction.locality || '',
-                                                                    cityName: auction.cityName || '',
-                                                                    reservePrice: auction.reservePrice || '',
-                                                                    emdAmount: auction.emdAmount || '',
-                                                                    bidIncrement: auction.bidIncrement || '',
-                                                                    emdLastDate: auction.emdLastDate ? auction.emdLastDate.slice(0, 16) : '',
-                                                                    auctionDate: auction.auctionDate ? auction.auctionDate.slice(0, 16) : '',
-                                                                    auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
-                                                                    inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
-                                                                    bankContactDetails: auction.bankContactDetails || '',
-                                                                    possession: auction.possession || 'Symbolic',
-                                                                    noticeUrl: auction.noticeUrl || '',
-                                                                    imageUrl: auction.imageUrl || ''
-                                                                });
-                                                                setImagePreview(null); // Clear preview for edit
-                                                                setActiveTab('post-auction');
-                                                            }}
-                                                            className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"
-                                                        >
-                                                            <FileEdit className="w-3 h-3" /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteAuction(auction.id)}
-                                                            className="ml-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-red-100"
-                                                            title="Delete Auction"
-                                                        >
-                                                            <Trash2 className="w-3 h-3" /> Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {(() => {
+                                                const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                                return myAuctions
+                                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                    .map(auction => (
+                                                        <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                                <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType} • {auction.cityName}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
+                                                                    {auction.bankName}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-5 py-3 font-black text-sm text-brand-dark">
+                                                                ₹{auction.reservePrice}
+                                                            </td>
+                                                            <td className="px-5 py-3 text-right">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingAuctionId(auction.id);
+                                                                        setFormData({
+                                                                            title: auction.title || '',
+                                                                            description: auction.description || '',
+                                                                            borrowerName: auction.borrowerName || '',
+                                                                            bankName: auction.bankName || '',
+                                                                            propertyType: auction.propertyType || 'Flat and Floor',
+                                                                            location: auction.location || '',
+                                                                            area: auction.area || '',
+                                                                            locality: auction.locality || '',
+                                                                            cityName: auction.cityName || '',
+                                                                            reservePrice: auction.reservePrice || '',
+                                                                            emdAmount: auction.emdAmount || '',
+                                                                            bidIncrement: auction.bidIncrement || '',
+                                                                            emdLastDate: auction.emdLastDate ? auction.emdLastDate.slice(0, 16) : '',
+                                                                            auctionDate: auction.auctionDate ? auction.auctionDate.slice(0, 16) : '',
+                                                                            auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
+                                                                            inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
+                                                                            bankContactDetails: auction.bankContactDetails || '',
+                                                                            possession: auction.possession || 'Symbolic',
+                                                                            noticeUrl: auction.noticeUrl || '',
+                                                                            imageUrl: auction.imageUrl || ''
+                                                                        });
+                                                                        setImagePreview(null);
+                                                                        setActiveTab('post-auction');
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"
+                                                                >
+                                                                    <FileEdit className="w-3 h-3" /> Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteAuction(auction.id)}
+                                                                    className="ml-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-red-100"
+                                                                    title="Delete Auction"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" /> Delete
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ));
+                                            })()}
                                             {allAuctions.filter(a => a.createdByEmail === user?.email).length === 0 && (
                                                 <tr>
-                                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
+                                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
                                                         You haven't posted any auctions yet.
                                                         <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
                                                     </td>
@@ -1135,6 +1242,69 @@ const AdminDashboard = () => {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {(() => {
+                                    const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                    if (myAuctions.length <= itemsPerPage) return null;
+
+                                    const totalPages = Math.ceil(myAuctions.length / itemsPerPage);
+                                    const pages = [];
+                                    const startPage = Math.max(1, currentPage - 2);
+                                    const endPage = Math.min(totalPages, startPage + 4);
+                                    const adjustedStart = Math.max(1, endPage - 4);
+
+                                    return (
+                                        <div className="flex justify-center items-center gap-2 py-6">
+                                            <button
+                                                onClick={() => setCurrentPage(1)}
+                                                disabled={currentPage === 1}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronsLeft size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronLeft size={14} />
+                                            </button>
+
+                                            {(() => {
+                                                for (let i = adjustedStart; i <= endPage; i++) {
+                                                    pages.push(
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setCurrentPage(i)}
+                                                            className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${currentPage === i
+                                                                ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20'
+                                                                : 'bg-white text-slate-500 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+                                                                }`}
+                                                        >
+                                                            {i}
+                                                        </button>
+                                                    );
+                                                }
+                                                return pages;
+                                            })()}
+
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronRight size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                disabled={currentPage === totalPages}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronsRight size={14} />
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 
