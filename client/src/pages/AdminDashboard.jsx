@@ -449,16 +449,23 @@ const AdminDashboard = () => {
         navigate('/');
     };
 
-    const SidebarItem = ({ id, icon: Icon, label }) => (
+    const SidebarItem = ({ id, icon: Icon, label, count }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${activeTab === id
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm ${activeTab === id
                 ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20'
                 : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
         >
-            <Icon className="w-5 h-5" />
-            {label}
+            <div className="flex items-center gap-3">
+                <Icon className="w-5 h-5" />
+                {label}
+            </div>
+            {count !== undefined && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${activeTab === id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    {count}
+                </span>
+            )}
         </button>
     );
 
@@ -476,9 +483,9 @@ const AdminDashboard = () => {
                 <div className="flex-1 p-4 space-y-2">
                     <SidebarItem id="overview" icon={LayoutDashboard} label="Admin Overview" />
                     <SidebarItem id="post-auction" icon={PlusSquare} label="Post Auction" />
-                    <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" />
-                    <SidebarItem id="users" icon={Users} label="User Management" />
-                    <SidebarItem id="auctions" icon={List} label="All Auctions" />
+                    <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" count={allAuctions.filter(a => a.createdByEmail === user?.email).length} />
+                    <SidebarItem id="users" icon={Users} label="User Management" count={allUsers.length} />
+                    <SidebarItem id="auctions" icon={List} label="All Auctions" count={allAuctions.length} />
 
                 </div>
             </aside>
@@ -930,21 +937,28 @@ const AdminDashboard = () => {
                         {activeTab === 'users' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">User Management</h2>
+                                    <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
+                                        User Management
+                                        <span className="bg-purple-50 text-purple-600 text-xs font-black px-2.5 py-1 rounded-full border border-purple-200">
+                                            {allUsers.length}
+                                        </span>
+                                    </h2>
                                     <p className="text-slate-500 mt-1">View and manage registered users and their platform roles.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">User Details</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Role Access</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Date Joined</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allUsers.map(u => (
+                                            {allUsers.map((u, index) => (
                                                 <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4 text-sm font-bold text-slate-400">{index + 1}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black uppercase shadow-sm border border-brand-blue/20">
@@ -983,13 +997,19 @@ const AdminDashboard = () => {
                         {activeTab === 'auctions' && (
                             <div className="space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">All Auctions</h2>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
+                                        All Auctions
+                                        <span className="bg-slate-100 text-slate-500 text-xs font-black px-2.5 py-1 rounded-full border border-slate-200">
+                                            {allAuctions.length}
+                                        </span>
+                                    </h2>
                                     <p className="text-sm text-slate-500 mt-1">Master catalog of all property listings.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
@@ -997,8 +1017,9 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allAuctions.map(auction => (
+                                            {allAuctions.map((auction, index) => (
                                                 <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3 text-xs font-bold text-slate-400">{index + 1}</td>
                                                     <td className="px-5 py-3">
                                                         <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
                                                         <p className="text-[11px] font-medium text-slate-500 mt-0.5">{auction.propertyType || auction.cityName}</p>
@@ -1025,13 +1046,19 @@ const AdminDashboard = () => {
                         {activeTab === 'my-auctions' && (
                             <div className="space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">Admin Auctions</h2>
+                                    <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-3">
+                                        Admin Auctions
+                                        <span className="bg-brand-blue/10 text-brand-blue text-xs font-black px-2.5 py-1 rounded-full border border-brand-blue/20">
+                                            {allAuctions.filter(a => a.createdByEmail === user?.email).length}
+                                        </span>
+                                    </h2>
                                     <p className="text-sm text-slate-500 mt-1">Properties posted by you. You have full edit access to these.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-12">S.No</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
@@ -1039,8 +1066,9 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allAuctions.filter(a => a.createdByEmail === user?.email).map(auction => (
+                                            {allAuctions.filter(a => a.createdByEmail === user?.email).map((auction, index) => (
                                                 <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3 text-xs font-bold text-slate-400">{index + 1}</td>
                                                     <td className="px-5 py-3">
                                                         <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
                                                         <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType} • {auction.cityName}</p>
@@ -1098,7 +1126,7 @@ const AdminDashboard = () => {
                                             ))}
                                             {allAuctions.filter(a => a.createdByEmail === user?.email).length === 0 && (
                                                 <tr>
-                                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
+                                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
                                                         You haven't posted any auctions yet.
                                                         <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
                                                     </td>
