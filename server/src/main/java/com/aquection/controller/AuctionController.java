@@ -23,6 +23,10 @@ import com.aquection.repository.UserRepository;
 import com.aquection.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/auctions")
@@ -36,6 +40,25 @@ public class AuctionController {
 
     @Autowired
     private UserRepository userRepository;
+
+    private void validateNotDirectBrowserRequest() {
+        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        HttpServletRequest request = attr.getRequest();
+
+        String fetchMode = request.getHeader("Sec-Fetch-Mode");
+        String acceptHeader = request.getHeader("Accept");
+
+        // Browsers requesting the URL directly usually have Sec-Fetch-Mode: navigate
+        // and Accept header containing text/html.
+        // We only want to allow cors/same-origin fetches that expect json.
+        boolean isDirectBrowser = "navigate".equalsIgnoreCase(fetchMode) ||
+                (acceptHeader != null && acceptHeader.contains("text/html"));
+
+        if (isDirectBrowser) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Direct API access is not allowed. Please use the website.");
+        }
+    }
 
     private boolean isPremiumOrAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -105,9 +128,16 @@ public class AuctionController {
     }
 
     @GetMapping
-    public List<Auction> getAllAuctions(
+    public ResponseEntity<?> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
+        try {
+            validateNotDirectBrowserRequest();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access Denied: Direct browser access to API is prohibited.");
+        }
+
         List<Auction> auctions;
         if (city != null) {
             auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
@@ -118,13 +148,21 @@ public class AuctionController {
         }
 
         boolean fullAccess = isPremiumOrAdmin();
-        return auctions.stream()
+        List<Auction> maskedAuctions = auctions.stream()
                 .map(a -> maskAuction(a, fullAccess))
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(maskedAuctions);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
+    public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
+        try {
+            validateNotDirectBrowserRequest();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access Denied: Direct browser access to API is prohibited.");
+        }
+
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
                 .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
