@@ -87,16 +87,19 @@ public class AuctionController {
         masked.setCreatedAt(original.getCreatedAt());
         masked.setUpdatedAt(original.getUpdatedAt());
 
-        // Mask sensitive fields
-        masked.setBorrowerName(null);
-        masked.setLocation(null);
-        masked.setBankContactDetails(null);
-        masked.setNoticeUrl(null);
-        masked.setContactOfficer(null);
-        masked.setContactNumber(null);
-        masked.setFacing(null);
-        masked.setOwnership(null);
-        masked.setCreatedByEmail(null);
+        // Mask sensitive fields and description for ALL non-Premium/Admin users
+        if (!fullAccess) {
+            masked.setBorrowerName(null);
+            masked.setLocation(null);
+            masked.setBankContactDetails(null);
+            masked.setNoticeUrl(null);
+            masked.setContactOfficer(null);
+            masked.setContactNumber(null);
+            masked.setFacing(null);
+            masked.setOwnership(null);
+            masked.setCreatedByEmail(null);
+            masked.setDescription("Detailed property info available only for PREMIUM members.");
+        }
 
         return masked;
     }
@@ -105,11 +108,6 @@ public class AuctionController {
     public List<Auction> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
-            return Collections.emptyList(); // Return nothing to non-logged-in users
-        }
-
         List<Auction> auctions;
         if (city != null) {
             auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
@@ -127,11 +125,6 @@ public class AuctionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
-            return ResponseEntity.status(401).build();
-        }
-
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
                 .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
