@@ -30,17 +30,27 @@ const AuctionDetails = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`${API_BASE_URL}/auctions/${id}`)
-            .then(res => res.json())
+        const headers = {};
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+        }
+
+        fetch(`${API_BASE_URL}/auctions/${id}`, { headers })
+            .then(res => {
+                if (res.status === 401) throw new Error('Unauthorized');
+                return res.json();
+            })
             .then(data => {
                 setAuction(data);
                 // After fetching main auction, fetch similar ones
-                fetch(`${API_BASE_URL}/auctions`)
+                fetch(`${API_BASE_URL}/auctions`, { headers })
                     .then(res => res.json())
                     .then(allAuctions => {
-                        const similar = allAuctions
+                        const similar = Array.isArray(allAuctions) ? allAuctions
                             .filter(a => a.id !== data.id && (a.cityName === data.cityName || a.propertyType === data.propertyType))
-                            .slice(0, 5);
+                            .slice(0, 5) : [];
                         setSimilarAuctions(similar);
                     });
                 setLoading(false);

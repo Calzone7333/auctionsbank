@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import com.aquection.repository.UserRepository;
 import com.aquection.entity.User;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 @RestController
 @RequestMapping("/api/auctions")
@@ -38,7 +39,8 @@ public class AuctionController {
 
     private boolean isPremiumOrAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken ||
+                auth.getPrincipal().equals("anonymousUser")) {
             return false;
         }
 
@@ -92,6 +94,9 @@ public class AuctionController {
         masked.setNoticeUrl(null);
         masked.setContactOfficer(null);
         masked.setContactNumber(null);
+        masked.setFacing(null);
+        masked.setOwnership(null);
+        masked.setCreatedByEmail(null);
 
         return masked;
     }
@@ -100,6 +105,11 @@ public class AuctionController {
     public List<Auction> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return Collections.emptyList(); // Return nothing to non-logged-in users
+        }
+
         List<Auction> auctions;
         if (city != null) {
             auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
@@ -117,6 +127,11 @@ public class AuctionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return ResponseEntity.status(401).build();
+        }
+
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
                 .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))

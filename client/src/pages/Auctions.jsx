@@ -59,8 +59,17 @@ const Auctions = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`${API_BASE_URL}/auctions`)
-            .then(res => res.json())
+        const headers = {};
+        if (localStorage.getItem('user')) {
+             const userData = JSON.parse(localStorage.getItem('user'));
+             if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+        }
+
+        fetch(`${API_BASE_URL}/auctions`, { headers })
+            .then(res => {
+                if (res.status === 401) return []; // Access denied
+                return res.json();
+            })
             .then(data => { setAuctions(Array.isArray(data) ? data : []); setLoading(false); })
             .catch(err => { console.error('Error fetching auctions:', err); setAuctions([]); setLoading(false); });
     }, []);

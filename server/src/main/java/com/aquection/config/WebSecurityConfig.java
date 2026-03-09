@@ -61,8 +61,11 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/auctions/**").permitAll()
-                        .requestMatchers("/api/auctions/public/stats").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats")
+                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").authenticated()
+                        .requestMatchers("/api/auctions/**").authenticated()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 

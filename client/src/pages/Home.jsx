@@ -79,8 +79,18 @@ const HomePage = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`${API_BASE_URL}/auctions`)
-            .then(res => res.json())
+        const headers = {};
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+        }
+
+        fetch(`${API_BASE_URL}/auctions`, { headers })
+            .then(res => {
+                if (res.status === 401) return []; // Access denied
+                return res.json();
+            })
             .then(data => {
                 setAuctions(Array.isArray(data) ? data.slice(0, 4) : []);
                 setLoading(false);
