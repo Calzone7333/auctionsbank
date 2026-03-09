@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
 public class User {
 
     @Id
@@ -42,10 +43,13 @@ public class User {
     @Column(name = "is_email_verified")
     private boolean emailVerified = false;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String emailVerificationToken;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String resetPasswordToken;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private java.time.LocalDateTime resetPasswordTokenExpiry;
 
     @Enumerated(EnumType.STRING)

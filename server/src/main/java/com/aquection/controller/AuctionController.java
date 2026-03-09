@@ -16,6 +16,12 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import com.aquection.repository.UserRepository;
+import com.aquection.entity.User;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auctions")
@@ -27,23 +33,93 @@ public class AuctionController {
     @Autowired
     private AuctionRepository auctionRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private boolean isPremiumOrAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            return false;
+        }
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) principal;
+            return userRepository.findByEmail(userDetails.getUsername()).map(u -> {
+                if (u.getRole() == User.Role.ADMIN)
+                    return true;
+                if (u.getAccountType() == User.AccountType.PREMIUM &&
+                        u.getPlanExpiryDate() != null &&
+                        u.getPlanExpiryDate().isAfter(LocalDateTime.now())) {
+                    return true;
+                }
+                return false;
+            }).orElse(false);
+        }
+        return false;
+    }
+
+    private Auction maskAuction(Auction original, boolean fullAccess) {
+        if (fullAccess)
+            return original;
+
+        Auction masked = new Auction();
+        masked.setId(original.getId());
+        masked.setTitle(original.getTitle());
+        masked.setDescription(original.getDescription());
+        masked.setBankName(original.getBankName());
+        masked.setCityName(original.getCityName());
+        masked.setPropertyType(original.getPropertyType());
+        masked.setReservePrice(original.getReservePrice());
+        masked.setEmdAmount(original.getEmdAmount());
+        masked.setAuctionDate(original.getAuctionDate());
+        masked.setAuctionEndDate(original.getAuctionEndDate());
+        masked.setImageUrl(original.getImageUrl());
+        masked.setLocality(original.getLocality());
+        masked.setArea(original.getArea());
+        masked.setBidIncrement(original.getBidIncrement());
+        masked.setInspectionDate(original.getInspectionDate());
+        masked.setEmdLastDate(original.getEmdLastDate());
+        masked.setPossession(original.getPossession());
+        masked.setActive(original.isActive());
+        masked.setCreatedAt(original.getCreatedAt());
+        masked.setUpdatedAt(original.getUpdatedAt());
+
+        // Mask sensitive fields
+        masked.setBorrowerName(null);
+        masked.setLocation(null);
+        masked.setBankContactDetails(null);
+        masked.setNoticeUrl(null);
+        masked.setContactOfficer(null);
+        masked.setContactNumber(null);
+
+        return masked;
+    }
+
     @GetMapping
     public List<Auction> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
+        List<Auction> auctions;
         if (city != null) {
-            return auctionRepository.findByCityNameContainingIgnoreCase(city);
+            auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
+        } else if (bank != null) {
+            auctions = auctionRepository.findByBankNameContainingIgnoreCase(bank);
+        } else {
+            auctions = auctionRepository.findByIsActiveTrue();
         }
-        if (bank != null) {
-            return auctionRepository.findByBankNameContainingIgnoreCase(bank);
-        }
-        return auctionRepository.findByIsActiveTrue();
+
+        boolean fullAccess = isPremiumOrAdmin();
+        return auctions.stream()
+                .map(a -> maskAuction(a, fullAccess))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Auction> getAuctionById(@PathVariable Long id) {
+        boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
