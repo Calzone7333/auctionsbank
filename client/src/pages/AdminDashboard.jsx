@@ -230,9 +230,13 @@ const AdminDashboard = () => {
                     headers: { 'Authorization': `Bearer ${user.token}` },
                     body: uploadData
                 });
-                if (uploadRes.status === 401 || uploadRes.status === 403) {
+                if (uploadRes.status === 401) {
                     alert('Session expired. Please login again.');
                     logout();
+                    return;
+                }
+                if (uploadRes.status === 403) {
+                    alert('You do not have permission to upload files. Please ensure you are logged in as an administrator.');
                     return;
                 }
                 if (uploadRes.ok) {
@@ -250,9 +254,13 @@ const AdminDashboard = () => {
                     headers: { 'Authorization': `Bearer ${user.token}` },
                     body: uploadData
                 });
-                if (uploadRes.status === 401 || uploadRes.status === 403) {
+                if (uploadRes.status === 401) {
                     alert('Session expired. Please login again.');
                     logout();
+                    return;
+                }
+                if (uploadRes.status === 403) {
+                    alert('You do not have permission to upload property images.');
                     return;
                 }
                 if (uploadRes.ok) {
@@ -329,11 +337,14 @@ const AdminDashboard = () => {
                     const aStats = await aStatsRes.json();
                     setStats(prev => ({ ...prev, totalAuctions: aStats.totalAuctions }));
                 }
-            } else if (response.status === 401 || response.status === 403) {
-                alert('Session expired or unauthorized. Logging out...');
+            } else if (response.status === 401) {
+                alert('Session expired. Please login again.');
                 logout();
+            } else if (response.status === 403) {
+                const errorMessage = await response.text();
+                alert(errorMessage || 'Unauthorized. You may not have permission for this action.');
             } else {
-                alert('Failed to post auction.');
+                alert('Failed to post auction. Please check your network or try again.');
             }
         } catch (error) {
             console.error('Error posting auction:', error);

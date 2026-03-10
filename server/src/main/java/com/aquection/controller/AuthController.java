@@ -13,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetails;
+import com.aquection.security.UserDetailsImpl;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
 import com.aquection.dto.GoogleLoginRequest;
@@ -159,8 +161,9 @@ public class AuthController {
                 }
 
                 // Authenticate manually
-                Authentication authentication = new UsernamePasswordAuthenticationToken(user.getEmail(), null,
-                        Collections.emptyList());
+                UserDetails userDetails = UserDetailsImpl.build(user);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                        userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 String jwt = jwtUtils.generateJwtTokenFromUsername(user.getEmail());

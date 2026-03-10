@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../apiConfig';
 
 const AuthContext = createContext(null);
@@ -6,14 +6,66 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const idleTimerRef = useRef(null);
+    const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+    const logout = useCallback(() => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        sessionStorage.clear();
+        localStorage.removeItem('user'); // Also clear any old localStorage data
+        setUser(null);
+        // Using window.location.href to home with a logout flag
+        window.location.href = '/?session=expired';
+    }, []);
+
+    // Function to reset the idle timer
+    const resetIdleTimer = useCallback(() => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        if (user) {
+            idleTimerRef.current = setTimeout(() => {
+                console.log("Session expired due to inactivity");
+                logout();
+            }, IDLE_TIMEOUT);
+        }
+    }, [user, logout]);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
+        // Try to load user from sessionStorage (tab session) or localStorage (persistent)
+        const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            // Check if token exists
+            if (parsedUser.token) {
+                setUser(parsedUser);
+            } else {
+                sessionStorage.clear();
+                localStorage.removeItem('user');
+            }
         }
         setLoading(false);
     }, []);
+
+    // Set up activity listeners for idle timeout
+    useEffect(() => {
+        if (user) {
+            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+            
+            // Initial timer set
+            resetIdleTimer();
+
+            // Add listeners
+            events.forEach(event => {
+                window.addEventListener(event, resetIdleTimer);
+            });
+
+            return () => {
+                if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+                events.forEach(event => {
+                    window.removeEventListener(event, resetIdleTimer);
+                });
+            };
+        }
+    }, [user, resetIdleTimer]);
 
     const login = async (email, password) => {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -29,7 +81,8 @@ export const AuthProvider = ({ children }) => {
 
         const data = await response.json();
         if (data.token) {
-            localStorage.setItem('user', JSON.stringify(data));
+            // Using sessionStorage to ensure logout when browser/tab is closed
+            sessionStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return { success: true };
         }
@@ -56,14 +109,6 @@ export const AuthProvider = ({ children }) => {
         return await login(email, password);
     };
 
-    const logout = () => {
-        localStorage.clear();
-        sessionStorage.clear();
-        setUser(null);
-        // Using window.location.href to a new URL ensures a fresh start
-        window.location.href = '/?logout=' + Date.now();
-    };
-
     const refreshUser = async () => {
         if (!user || !user.token) return;
         try {
@@ -73,8 +118,10 @@ export const AuthProvider = ({ children }) => {
             if (response.ok) {
                 const updatedUser = await response.json();
                 const newUser = { ...user, ...updatedUser };
-                localStorage.setItem('user', JSON.stringify(newUser));
+                sessionStorage.setItem('user', JSON.stringify(newUser));
                 setUser(newUser);
+            } else if (response.status === 401) {
+                logout();
             }
         } catch (error) {
             console.error("Failed to refresh user:", error);
@@ -95,7 +142,7 @@ export const AuthProvider = ({ children }) => {
 
         const data = await response.json();
         if (data.token) {
-            localStorage.setItem('user', JSON.stringify(data));
+            sessionStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return data;
         }
