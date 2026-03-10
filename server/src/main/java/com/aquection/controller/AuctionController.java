@@ -183,12 +183,20 @@ public class AuctionController {
 
     @PostMapping
     public ResponseEntity<?> createAuction(@RequestBody Auction auction) {
+        System.out.println("DEBUG (CREATE): Checking authentication...");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            System.out.println("DEBUG (CREATE): Access Denied - User is null or anonymous");
+            return ResponseEntity.status(401).body(Collections.singletonMap("error", "Unauthorized: User is null or anonymous"));
+        }
+
         if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: You must be an Administrator to post auctions."));
+            System.out.println("DEBUG (CREATE): Access Denied for user " + auth.getName());
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: You must be an Administrator. Current: " + auth.getAuthorities()));
         }
         
         try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            Object principal = auth.getPrincipal();
             String email;
             if (principal instanceof UserDetails) {
                 email = ((UserDetails) principal).getUsername();
@@ -201,7 +209,7 @@ public class AuctionController {
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Collections.singletonMap("error", "Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Collections.singletonMap("error", "Database/Server Error: " + e.getMessage()));
         }
     }
 

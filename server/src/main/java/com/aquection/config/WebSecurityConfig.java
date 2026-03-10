@@ -53,12 +53,12 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
-                        .frameOptions(frame -> frame.disable()))
+                        .frameOptions(frame -> frame.disable())
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Cross-Origin-Opener-Policy", "same-origin-allow-popups")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        // 1. Fully permit the path here so it reaches the Controller
-                        // 2. We handle actual role checks MANUALLY inside the Controller methods
                         .requestMatchers("/api/auctions", "/api/auctions/**").permitAll()
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/uploads/**").permitAll()
