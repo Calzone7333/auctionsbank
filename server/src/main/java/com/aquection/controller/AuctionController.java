@@ -30,9 +30,6 @@ import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/auctions")
-@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174",
-        "https://madrasauction.com" }, allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
-                RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS })
 public class AuctionController {
 
     @Autowired
@@ -232,12 +229,8 @@ public class AuctionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return auctionRepository.findById(id).map(auction -> {
-            if (!auction.getCreatedByEmail().equals(userDetails.getUsername())) {
-                return ResponseEntity.status(403).body("You can only edit auctions you created.");
-            }
-            // Update fields
+            // Update fields (admins can edit anything)
             auction.setTitle(updatedAuction.getTitle());
             auction.setDescription(updatedAuction.getDescription());
             auction.setBankName(updatedAuction.getBankName());
@@ -268,15 +261,7 @@ public class AuctionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
         System.out.println("Delete request received for auction ID: " + id);
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        System.out.println("Request by user: " + userDetails.getUsername());
         return auctionRepository.findById(id).map(auction -> {
-            // Check if the current user is the creator
-            String creatorEmail = auction.getCreatedByEmail();
-            if (creatorEmail != null && !creatorEmail.equals(userDetails.getUsername())) {
-                return ResponseEntity.status(403).body("You can only delete auctions you created.");
-            }
-
             // Perform Hard Delete (remove from database)
             auctionRepository.delete(auction);
             System.out.println("Auction ID " + id + " deleted from database.");
