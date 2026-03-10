@@ -62,17 +62,22 @@ public class AuctionController {
 
     private boolean isPremiumOrAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken ||
-                auth.getPrincipal().equals("anonymousUser")) {
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return false;
         }
 
+        // 1. Trust the authorities from the token first
+        boolean hasAdminRole = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+        
+        if (hasAdminRole) return true;
+
+        // 2. Check for Premium if not an admin
         Object principal = auth.getPrincipal();
         if (principal instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) principal;
-            return userRepository.findByEmail(userDetails.getUsername()).map(u -> {
-                if (u.getRole() == User.Role.ADMIN)
-                    return true;
+            return userRepository.findByEmail(userDetails.getUsername().toLowerCase()).map(u -> {
+                if (u.getRole() == User.Role.ADMIN) return true;
                 if (u.getAccountType() == User.AccountType.PREMIUM &&
                         u.getPlanExpiryDate() != null &&
                         u.getPlanExpiryDate().isAfter(LocalDateTime.now())) {
@@ -171,12 +176,12 @@ public class AuctionController {
     }
 
     @GetMapping("/my")
-    public List<Auction> getMyAuctions() {
+    public ResponseEntity<?> getMyAuctions() {
         if (!isPremiumOrAdmin()) {
-            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to view your auctions"));
         }
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(auctionRepository.findByCreatedByEmail(userDetails.getUsername()));
     }
 
     @PostMapping("/upload")
@@ -210,9 +215,9 @@ public class AuctionController {
     }
 
     @PostMapping
-    public Auction createAuction(@RequestBody Auction auction) {
+    public ResponseEntity<?> createAuction(@RequestBody Auction auction) {
         if (!isPremiumOrAdmin()) {
-            throw new org.springframework.security.access.AccessDeniedException("Admin role required to create auctions");
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to create auctions"));
         }
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email;
@@ -223,7 +228,8 @@ public class AuctionController {
         }
         
         auction.setCreatedByEmail(email);
-        return auctionRepository.save(auction);
+        Auction saved = auctionRepository.save(auction);
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/public/stats")
