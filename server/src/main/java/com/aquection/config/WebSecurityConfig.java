@@ -64,12 +64,10 @@ public class WebSecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").permitAll()
-                        .requestMatchers("/api/auctions/my", "/api/auctions/upload", "/api/auctions/stats").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers("/api/users/me").hasAnyAuthority("ROLE_USER", "USER", "ROLE_ADMIN", "ADMIN")
-                        .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers("/api/auctions/my", "/api/auctions/upload", "/api/auctions/stats").hasRole("ADMIN")
+                        .requestMatchers("/api/auctions", "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 
@@ -82,10 +80,19 @@ public class WebSecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
-        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+        configuration.setAllowedOrigins(java.util.Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:5174",
+                "https://madrasauction.com",
+                "http://madrasauction.com",
+                "https://www.madrasauction.com",
+                "http://www.madrasauction.com"));
+        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Sec-Fetch-Mode"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
