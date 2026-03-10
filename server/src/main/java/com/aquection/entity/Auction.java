@@ -47,8 +47,10 @@ public class Auction {
 
     // Detailed Fields
     private String borrowerName;
+    @Column(columnDefinition = "TEXT")
     private String location;
     private String locality;
+    @Column(columnDefinition = "TEXT")
     private String bankContactDetails;
     private String area;
     private String facing;

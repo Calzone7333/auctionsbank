@@ -38,41 +38,93 @@ public class AuctionController {
     @Autowired
     private UserRepository userRepository;
 
+    private void validateNotDirectBrowserRequest() {
+        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        if (attr == null)
+            return;
+        HttpServletRequest request = attr.getRequest();
+
+        // Only restrict GET requests. POST/PUT/DELETE are always legitimate API calls
+        // from code.
+        if ("GET".equalsIgnoreCase(request.getMethod())) {
+            String acceptHeader = request.getHeader("Accept");
+            String fetchMode = request.getHeader("Sec-Fetch-Mode");
+
+            // Browsers navigating directly send "navigate" fetch mode or expect "text/html"
+            boolean isBrowserNavigation = "navigate".equalsIgnoreCase(fetchMode) ||
+                    (acceptHeader != null && acceptHeader.contains("text/html"));
+
+            if (isBrowserNavigation) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Direct API access via browser is prohibited for security reasons.");
+            }
+        }
+    }
+
     private boolean isPremiumOrAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return false;
         }
 
-        // 1. Trust mapping from authorities
-        boolean isAdmin = auth.getAuthorities().stream()
+        // 1. Check authorities from current Session/Token
+        boolean hasAdminAuthority = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) return true;
 
+        // 2. Direct Database Fallback (handles SQL updates without logout)
         Object principal = auth.getPrincipal();
-        if (principal instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) principal;
-            return userRepository.findByEmail(userDetails.getUsername().toLowerCase()).map(u -> {
-                if (u.getRole() == User.Role.ADMIN) return true;
-                if (u.getAccountType() == User.AccountType.PREMIUM &&
-                        u.getPlanExpiryDate() != null &&
-                        u.getPlanExpiryDate().isAfter(LocalDateTime.now())) {
-                    return true;
-                }
-                return false;
-            }).orElse(false);
+        String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername()
+                : principal.toString();
+
+        // Case-insensitive database check
+        boolean isAuthorized = userRepository.findByEmail(email.trim().toLowerCase()).map(u -> {
+            boolean isAdmin = u.getRole() == User.Role.ADMIN;
+            boolean isPremium = u.getAccountType() == User.AccountType.PREMIUM &&
+                    u.getPlanExpiryDate() != null &&
+                    u.getPlanExpiryDate().isAfter(LocalDateTime.now());
+
+            System.out.println("DEBUG: Authenticated Email: [" + email + "] | DB Role: [" + u.getRole()
+                    + "] | isAdmin: " + isAdmin);
+            return isAdmin || isPremium;
+        }).orElse(hasAdminAuthority);
+
+        if (isAuthorized) {
+            System.out.println("DEBUG: ACCESS GRANTED for user: " + email);
+        } else {
+            System.out.println("DEBUG: ACCESS MASKED for user: " + email + ". (Not Admin or Premium)");
         }
-        return false;
+
+        return isAuthorized;
     }
 
     private Auction maskAuction(Auction original, boolean fullAccess) {
-        if (fullAccess)
-            return original;
+        // Get current user email for Owner-Override check
+        String currentEmail = "";
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            Object principal = auth.getPrincipal();
+            currentEmail = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername()
+                    : principal.toString();
+            currentEmail = currentEmail.trim().toLowerCase();
+        }
 
+        // 1. If Admin/Premium, return full data
+        // 2. NEW: If the user is the OWNER of this auction, return full data
+        boolean isOwner = original.getCreatedByEmail() != null
+                && original.getCreatedByEmail().trim().toLowerCase().equals(currentEmail);
+
+        if (fullAccess || isOwner) {
+            if (isOwner && !fullAccess) {
+                System.out.println("DEBUG: User " + currentEmail + " is the OWNER of Auction " + original.getId()
+                        + ". Granting full access.");
+            }
+            return original;
+        }
+
+        // If not authorized, create a copy with sensitive data removed
         Auction masked = new Auction();
         masked.setId(original.getId());
         masked.setTitle(original.getTitle());
-        masked.setDescription(original.getDescription());
         masked.setBankName(original.getBankName());
         masked.setCityName(original.getCityName());
         masked.setPropertyType(original.getPropertyType());
@@ -81,7 +133,6 @@ public class AuctionController {
         masked.setAuctionDate(original.getAuctionDate());
         masked.setAuctionEndDate(original.getAuctionEndDate());
         masked.setImageUrl(original.getImageUrl());
-        masked.setLocality(original.getLocality());
         masked.setArea(original.getArea());
         masked.setBidIncrement(original.getBidIncrement());
         masked.setInspectionDate(original.getInspectionDate());
@@ -91,28 +142,63 @@ public class AuctionController {
         masked.setCreatedAt(original.getCreatedAt());
         masked.setUpdatedAt(original.getUpdatedAt());
 
-        // Mask sensitive fields and description for ALL non-Premium/Admin users
-        if (!fullAccess) {
-            masked.setBorrowerName(null);
-            masked.setLocation(null);
-            masked.setBankContactDetails(null);
-            masked.setNoticeUrl(null);
-            masked.setContactOfficer(null);
-            masked.setContactNumber(null);
-            masked.setFacing(null);
-            masked.setOwnership(null);
-            masked.setCreatedByEmail(null);
-            masked.setDescription("Detailed property info available only for PREMIUM members.");
-        }
+        // Mask sensitive fields
+        masked.setBorrowerName(null);
+        masked.setLocation(null);
+        masked.setLocality(null);
+        masked.setBankContactDetails(null);
+        masked.setNoticeUrl(null);
+        masked.setContactOfficer(null);
+        masked.setContactNumber(null);
+        masked.setFacing(null);
+        masked.setOwnership(null);
+        masked.setCreatedByEmail(null);
+        masked.setDescription("Detailed property info available only for PREMIUM members.");
 
         return masked;
     }
+
+    // ─── ADMIN-ONLY: Full unmasked data endpoints ──────────────────────
+    // These endpoints are used exclusively by the AdminDashboard and always
+    // return 100% unmasked data. Protected by an explicit ADMIN DB check.
+
+    private boolean isAdminFromDB() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken)
+            return false;
+        Object principal = auth.getPrincipal();
+        String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername()
+                : principal.toString();
+        return userRepository.findByEmail(email).map(u -> u.getRole() == User.Role.ADMIN).orElse(false);
+    }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<?> getAllAuctionsAdmin() {
+        if (!isAdminFromDB()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access denied. Admin only."));
+        }
+        List<Auction> auctions = auctionRepository.findAll();
+        auctions.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        return ResponseEntity.ok(auctions);
+    }
+
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<?> getAuctionByIdAdmin(@PathVariable Long id) {
+        if (!isAdminFromDB()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access denied. Admin only."));
+        }
+        return auctionRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    // ───────────────────────────────────────────────────────────────────
 
     @GetMapping
     public ResponseEntity<?> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
-        
+        validateNotDirectBrowserRequest();
+
         List<Auction> auctions;
         if (city != null) {
             auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
@@ -131,9 +217,17 @@ public class AuctionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
+        validateNotDirectBrowserRequest();
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
-                .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
+                .map(a -> {
+                    System.out.println("DEBUG: Data from Database for ID " + id + ": BorrowerName="
+                            + a.getBorrowerName() + ", Location=" + a.getLocation() + ", Locality=" + a.getLocality()
+                            + ", BankContactDetails=" + a.getBankContactDetails() + ", NoticeUrl=" + a.getNoticeUrl());
+                    Auction result = maskAuction(a, fullAccess);
+                    System.out.println("DEBUG: Sending Auction ID [" + id + "] to frontend. Masked? " + (!fullAccess));
+                    return ResponseEntity.ok(result);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -186,20 +280,23 @@ public class AuctionController {
         try {
             System.out.println("DEBUG (CREATE): Processing new auction POST...");
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            
+
             if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
                 System.out.println("DEBUG (CREATE): User is NULL or Anonymous");
-                return ResponseEntity.status(401).body(Collections.singletonMap("error", "Unauthorized: User is null or anonymous"));
+                return ResponseEntity.status(401)
+                        .body(Collections.singletonMap("error", "Unauthorized: User is null or anonymous"));
             }
 
             if (!isPremiumOrAdmin()) {
                 System.out.println("DEBUG (CREATE): Access Denied for user " + auth.getName());
-                return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: Admin role required for " + auth.getName()));
+                return ResponseEntity.status(403).body(
+                        Collections.singletonMap("error", "Access Denied: Admin role required for " + auth.getName()));
             }
-            
+
             Object principal = auth.getPrincipal();
-            String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername() : principal.toString();
-            
+            String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername()
+                    : principal.toString();
+
             System.out.println("DEBUG (CREATE): Saving auction for email: " + email);
             auction.setCreatedByEmail(email);
             Auction saved = auctionRepository.save(auction);
@@ -207,7 +304,8 @@ public class AuctionController {
         } catch (Exception e) {
             System.err.println("FATAL ERROR in createAuction: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Collections.singletonMap("error", "System Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(Collections.singletonMap("error", "System Error: " + e.getMessage()));
         }
     }
 

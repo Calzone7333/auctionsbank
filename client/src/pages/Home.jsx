@@ -80,10 +80,12 @@ const HomePage = () => {
     useEffect(() => {
         setLoading(true);
         const headers = {};
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
         if (storedUser) {
-            const userData = JSON.parse(storedUser);
-            if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+            try {
+                const userData = JSON.parse(storedUser);
+                if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+            } catch(e) {}
         }
 
         fetch(`${API_BASE_URL}/auctions`, { headers })

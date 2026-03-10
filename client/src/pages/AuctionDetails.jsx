@@ -31,10 +31,16 @@ const AuctionDetails = () => {
     useEffect(() => {
         setLoading(true);
         const headers = {};
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            const userData = JSON.parse(storedUser);
-            if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+        if (user && user.token) {
+            headers['Authorization'] = `Bearer ${user.token}`;
+        } else {
+            const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
+                } catch(e) {}
+            }
         }
 
         fetch(`${API_BASE_URL}/auctions/${id}`, { headers })
@@ -43,6 +49,7 @@ const AuctionDetails = () => {
                 return res.json();
             })
             .then(data => {
+                console.log("DEBUG: RECEIVED AUCTION DATA FROM BACKEND:", data); // THIS PRINTS TO BROWSER CONSOLE
                 setAuction(data);
                 // After fetching main auction, fetch similar ones
                 fetch(`${API_BASE_URL}/auctions`, { headers })
@@ -180,7 +187,7 @@ const AuctionDetails = () => {
                                 { label: 'Location', value: auction.location, isPremium: true },
                                 { label: 'Area', value: auction.area },
                                 { label: 'Possession', value: auction.possession },
-                                { label: 'Locality', value: auction.locality },
+                                { label: 'Locality', value: auction.locality, isPremium: true },
                                 { label: 'City', value: auction.cityName },
                                 { label: 'Reserve Price', value: formatCurrency(auction.reservePrice), isBold: true },
                                 { label: 'Emd Amount', value: formatCurrency(auction.emdAmount) },

@@ -27,7 +27,10 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
-    ChevronsRight
+    ChevronsRight,
+    ExternalLink,
+    FileDown,
+    Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -116,14 +119,14 @@ const AdminDashboard = () => {
         };
 
         // Bank & Borrower
-        const bank = extract(/Bank Name:\s*(.*)/i);
+        const bank = extract(/(?:Bank Name|Bank):\s*(.*)/i);
         if (bank) data.bankName = bank;
 
-        const borrower = extract(/Borrower Name:\s*(.*)/i);
+        const borrower = extract(/(?:Borrower Name|Borrower):\s*(.*)/i);
         if (borrower) data.borrowerName = borrower;
 
         // Property Type Mapping
-        const type = extract(/Property Type:\s*(.*)/i);
+        const type = extract(/(?:Property Type|Type):\s*(.*)/i);
         if (type) {
             const tl = type.toLowerCase();
             if (tl.includes('flat') || tl.includes('floor')) data.propertyType = 'Flat and Floor';
@@ -139,11 +142,11 @@ const AdminDashboard = () => {
         }
 
         // Description
-        const desc = extract(/Description:\s*(.*)/i);
+        const desc = extract(/(?:Description|Desc|Details):\s*(.*)/i);
         if (desc) data.description = desc;
 
         // Location & City
-        const loc = extract(/Location:\s*(.*)/i) || extract(/Property Location:\s*(.*)/i);
+        const loc = extract(/(?:Location|Address|Property Location|Property Address|Add):\s*(.*)/i);
         if (loc) {
             data.location = loc;
             // Extract city from location if city not explicitly provided
@@ -155,11 +158,11 @@ const AdminDashboard = () => {
         }
 
         // Area
-        const area = extract(/Area:\s*(.*)/i) || extract(/Building Area.*:\s*(.*)/i) || extract(/Total Land Area:\s*(.*)/i) || extract(/Property Dimensions:\s*(.*)/i);
+        const area = extract(/(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension):\s*(.*)/i);
         if (area) data.area = area;
 
         // Locality
-        const locality = extract(/Locality:\s*(.*)/i);
+        const locality = extract(/(?:Locality|Loc):\s*(.*)/i);
         if (locality) data.locality = locality;
 
         // City (Explicit)
@@ -167,20 +170,21 @@ const AdminDashboard = () => {
         if (city) data.cityName = city;
 
         // Financials
-        const rp = extract(/Reserve Price:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        const rp = extract(/(?:Reserve Price|Price|RP):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
         if (rp) data.reservePrice = rp.replace(/,/g, '');
 
-        const emdVal = extract(/EMD Amount.*:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        const emdVal = extract(/(?:EMD Amount|EMD):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
         if (emdVal) data.emdAmount = emdVal.replace(/,/g, '');
 
-        const bi = extract(/Bid Increment:\s*(?:Rs\.|₹)?\s*([\d,]+)/i);
+        const bi = extract(/(?:Bid Increment|Increment):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
         if (bi) data.bidIncrement = bi.replace(/,/g, '');
 
         // Bank Contact
-        const contact = extract(/Bank Contact Details:\s*(.*)/i) || extract(/Contact:\s*(.*)/i);
-        const email = extract(/Bank Email:\s*(.*)/i) || extract(/Email:\s*(.*)/i);
-        if (contact || email) {
-            data.bankContactDetails = `${contact || ''} ${email ? `| Email: ${email}` : ''}`.trim();
+        const contact = extract(/(?:Bank Contact Details|Contact|Officer|Person):\s*(.*)/i);
+        const phone = extract(/(?:Phone|Mobile|Contact No):\s*(.*)/i);
+        const email = extract(/(?:Bank Email|Email):\s*(.*)/i);
+        if (contact || email || phone) {
+            data.bankContactDetails = `${contact || ''} ${phone ? `| Ph: ${phone}` : ''} ${email ? `| Email: ${email}` : ''}`.trim();
         }
 
         // Dates - improved extraction
@@ -337,6 +341,17 @@ const AdminDashboard = () => {
                     const aStats = await aStatsRes.json();
                     setStats(prev => ({ ...prev, totalAuctions: aStats.totalAuctions }));
                 }
+                // Refresh auctions list with full admin data
+                const auctRes = await fetch(`${API_BASE_URL}/auctions/admin/all`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                if (auctRes.ok) {
+                    const auctData = await auctRes.json();
+                    const sortedData = Array.isArray(auctData)
+                        ? auctData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                        : [];
+                    setAllAuctions(sortedData);
+                }
             } else if (response.status === 401) {
                 alert('Session expired. Please login again.');
                 logout();
@@ -404,10 +419,16 @@ const AdminDashboard = () => {
 
         if (activeTab === 'auctions' || activeTab === 'my-auctions') {
             if (user?.token) {
-                fetch(`${API_BASE_URL}/auctions`, {
+                fetch(`${API_BASE_URL}/auctions/admin/all`, {
                     headers: { 'Authorization': `Bearer ${user.token}` }
                 })
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) {
+                            console.error('Admin auction fetch failed:', res.status);
+                            return [];
+                        }
+                        return res.json();
+                    })
                     .then(data => {
                         const sortedData = Array.isArray(data)
                             ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -1071,10 +1092,12 @@ const AdminDashboard = () => {
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Posted Date</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Details</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Borrower & Location</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank & Contact</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Financials</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Docs</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -1084,18 +1107,43 @@ const AdminDashboard = () => {
                                                     <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
                                                         <td className="px-5 py-3">
                                                             <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">{auction.propertyType || auction.cityName}</p>
+                                                            <p className="text-[11px] font-black text-brand-blue uppercase tracking-wider mt-0.5">{auction.propertyType}</p>
                                                         </td>
                                                         <td className="px-5 py-3">
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
-                                                                {auction.bankName}
-                                                            </span>
+                                                            <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
+                                                            <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {auction.cityName}</p>
                                                         </td>
-                                                        <td className="px-5 py-3 font-black text-sm text-brand-dark">
-                                                            ₹{auction.reservePrice}
+                                                        <td className="px-5 py-3">
+                                                            <p className="font-bold text-xs text-slate-700">{auction.bankName}</p>
+                                                            <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{auction.bankContactDetails || 'No Contact'}</p>
                                                         </td>
-                                                        <td className="px-5 py-3 text-xs font-medium text-slate-500">
-                                                            {new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        <td className="px-5 py-3">
+                                                            <p className="font-black text-sm text-brand-dark">₹{auction.reservePrice}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-0.5">{new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
+                                                        </td>
+                                                        <td className="px-5 py-3 text-center">
+                                                            {auction.noticeUrl ? (
+                                                                <a 
+                                                                    href={getFileUrl(auction.noticeUrl)} 
+                                                                    target="_blank" 
+                                                                    rel="noreferrer"
+                                                                    className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                    title="View/Download Notice"
+                                                                >
+                                                                    <FileDown className="w-4 h-4" />
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-[10px] text-slate-300 italic">No File</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-5 py-3 text-right">
+                                                            <button
+                                                                onClick={() => navigate(`/auctions/${auction.id}`)}
+                                                                className="p-2 text-slate-400 hover:text-brand-blue hover:bg-slate-50 rounded-lg transition-all"
+                                                                title="View Details"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -1173,9 +1221,11 @@ const AdminDashboard = () => {
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Title</th>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank</th>
-                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Details</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Borrower & Location</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank & Contact</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Financials</th>
+                                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Docs</th>
                                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                             </tr>
                                         </thead>
@@ -1188,63 +1238,91 @@ const AdminDashboard = () => {
                                                         <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
                                                             <td className="px-5 py-3">
                                                                 <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                                <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType} • {auction.cityName}</p>
+                                                                <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType}</p>
                                                             </td>
                                                             <td className="px-5 py-3">
-                                                                <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 border border-slate-200/60">
-                                                                    {auction.bankName}
-                                                                </span>
+                                                                <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
+                                                                <p className="text-[10px] text-slate-500 truncate max-w-[150px] flex items-center gap-1 mt-0.5"><MapPin className="w-2.5 h-2.5" /> {auction.location || auction.cityName}</p>
                                                             </td>
-                                                            <td className="px-5 py-3 font-black text-sm text-brand-dark">
-                                                                ₹{auction.reservePrice}
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-bold text-xs text-slate-700">{auction.bankName}</p>
+                                                                <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{auction.bankContactDetails || 'No Contact'}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-black text-sm text-brand-dark">₹{auction.reservePrice}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3 text-center">
+                                                                {auction.noticeUrl ? (
+                                                                    <a 
+                                                                        href={getFileUrl(auction.noticeUrl)} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer"
+                                                                        className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                        title="View/Download Notice"
+                                                                    >
+                                                                        <FileDown className="w-4 h-4" />
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-slate-300 italic">No File</span>
+                                                                )}
                                                             </td>
                                                             <td className="px-5 py-3 text-right">
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setEditingAuctionId(auction.id);
-                                                                        setFormData({
-                                                                            title: auction.title || '',
-                                                                            description: auction.description || '',
-                                                                            borrowerName: auction.borrowerName || '',
-                                                                            bankName: auction.bankName || '',
-                                                                            propertyType: auction.propertyType || 'Flat and Floor',
-                                                                            location: auction.location || '',
-                                                                            area: auction.area || '',
-                                                                            locality: auction.locality || '',
-                                                                            cityName: auction.cityName || '',
-                                                                            reservePrice: auction.reservePrice || '',
-                                                                            emdAmount: auction.emdAmount || '',
-                                                                            bidIncrement: auction.bidIncrement || '',
-                                                                            emdLastDate: auction.emdLastDate ? auction.emdLastDate.slice(0, 16) : '',
-                                                                            auctionDate: auction.auctionDate ? auction.auctionDate.slice(0, 16) : '',
-                                                                            auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
-                                                                            inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
-                                                                            bankContactDetails: auction.bankContactDetails || '',
-                                                                            possession: auction.possession || 'Symbolic',
-                                                                            noticeUrl: auction.noticeUrl || '',
-                                                                            imageUrl: auction.imageUrl || ''
-                                                                        });
-                                                                        setImagePreview(null);
-                                                                        setActiveTab('post-auction');
-                                                                    }}
-                                                                    className="px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-brand-blue/20"
-                                                                >
-                                                                    <FileEdit className="w-3 h-3" /> Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteAuction(auction.id)}
-                                                                    className="ml-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5 shadow-sm border border-red-100"
-                                                                    title="Delete Auction"
-                                                                >
-                                                                    <Trash2 className="w-3 h-3" /> Delete
-                                                                </button>
+                                                                <div className="flex items-center justify-end gap-1">
+                                                                    <button
+                                                                        onClick={() => navigate(`/auctions/${auction.id}`)}
+                                                                        className="p-2 text-slate-400 hover:text-brand-blue hover:bg-slate-50 rounded-lg transition-all"
+                                                                        title="View Details"
+                                                                    >
+                                                                        <Eye className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingAuctionId(auction.id);
+                                                                            setFormData({
+                                                                                title: auction.title || '',
+                                                                                description: auction.description || '',
+                                                                                borrowerName: auction.borrowerName || '',
+                                                                                bankName: auction.bankName || '',
+                                                                                propertyType: auction.propertyType || 'Flat and Floor',
+                                                                                location: auction.location || '',
+                                                                                area: auction.area || '',
+                                                                                locality: auction.locality || '',
+                                                                                cityName: auction.cityName || '',
+                                                                                reservePrice: auction.reservePrice || '',
+                                                                                emdAmount: auction.emdAmount || '',
+                                                                                bidIncrement: auction.bidIncrement || '',
+                                                                                emdLastDate: auction.emdLastDate ? auction.emdLastDate.slice(0, 16) : '',
+                                                                                auctionDate: auction.auctionDate ? auction.auctionDate.slice(0, 16) : '',
+                                                                                auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
+                                                                                inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
+                                                                                bankContactDetails: auction.bankContactDetails || '',
+                                                                                possession: auction.possession || 'Symbolic',
+                                                                                noticeUrl: auction.noticeUrl || '',
+                                                                                imageUrl: auction.imageUrl || ''
+                                                                            });
+                                                                            setImagePreview(null);
+                                                                            setActiveTab('post-auction');
+                                                                        }}
+                                                                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                                                        title="Edit Auction"
+                                                                    >
+                                                                        <FileEdit className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteAuction(auction.id)}
+                                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                                        title="Delete Auction"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ));
                                             })()}
                                             {allAuctions.filter(a => a.createdByEmail === user?.email).length === 0 && (
                                                 <tr>
-                                                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
+                                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
                                                         You haven't posted any auctions yet.
                                                         <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
                                                     </td>
