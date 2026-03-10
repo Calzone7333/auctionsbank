@@ -64,8 +64,10 @@ public class WebSecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").permitAll()
-                        .requestMatchers("/api/auctions", "/api/auctions/**").authenticated()
-                        .requestMatchers("/api/users", "/api/users/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users", "/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 

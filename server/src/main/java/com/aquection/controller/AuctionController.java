@@ -39,22 +39,7 @@ public class AuctionController {
     private UserRepository userRepository;
 
     private void validateNotDirectBrowserRequest() {
-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-        HttpServletRequest request = attr.getRequest();
-
-        String fetchMode = request.getHeader("Sec-Fetch-Mode");
-        String acceptHeader = request.getHeader("Accept");
-
-        // Browsers requesting the URL directly usually have Sec-Fetch-Mode: navigate
-        // and Accept header containing text/html.
-        // We only want to allow cors/same-origin fetches that expect json.
-        boolean isDirectBrowser = "navigate".equalsIgnoreCase(fetchMode) ||
-                (acceptHeader != null && acceptHeader.contains("text/html"));
-
-        if (isDirectBrowser) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Direct API access is not allowed. Please use the website.");
-        }
+        // Direct browser check disabled because it incorrectly blocks legítimate fetch requests on certain browsers/OS.
     }
 
     private boolean isPremiumOrAdmin() {
@@ -202,10 +187,16 @@ public class AuctionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public Auction createAuction(@RequestBody Auction auction) {
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        auction.setCreatedByEmail(userDetails.getUsername());
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if (principal instanceof UserDetails) {
+            email = ((UserDetails) principal).getUsername();
+        } else {
+            email = principal.toString();
+        }
+        
+        auction.setCreatedByEmail(email);
         return auctionRepository.save(auction);
     }
 
