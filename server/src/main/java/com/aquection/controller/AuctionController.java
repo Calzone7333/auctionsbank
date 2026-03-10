@@ -183,33 +183,31 @@ public class AuctionController {
 
     @PostMapping
     public ResponseEntity<?> createAuction(@RequestBody Auction auction) {
-        System.out.println("DEBUG (CREATE): Checking authentication...");
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
-            System.out.println("DEBUG (CREATE): Access Denied - User is null or anonymous");
-            return ResponseEntity.status(401).body(Collections.singletonMap("error", "Unauthorized: User is null or anonymous"));
-        }
-
-        if (!isPremiumOrAdmin()) {
-            System.out.println("DEBUG (CREATE): Access Denied for user " + auth.getName());
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: You must be an Administrator. Current: " + auth.getAuthorities()));
-        }
-        
         try {
-            Object principal = auth.getPrincipal();
-            String email;
-            if (principal instanceof UserDetails) {
-                email = ((UserDetails) principal).getUsername();
-            } else {
-                email = principal.toString();
+            System.out.println("DEBUG (CREATE): Processing new auction POST...");
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+                System.out.println("DEBUG (CREATE): User is NULL or Anonymous");
+                return ResponseEntity.status(401).body(Collections.singletonMap("error", "Unauthorized: User is null or anonymous"));
+            }
+
+            if (!isPremiumOrAdmin()) {
+                System.out.println("DEBUG (CREATE): Access Denied for user " + auth.getName());
+                return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: Admin role required for " + auth.getName()));
             }
             
+            Object principal = auth.getPrincipal();
+            String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername() : principal.toString();
+            
+            System.out.println("DEBUG (CREATE): Saving auction for email: " + email);
             auction.setCreatedByEmail(email);
             Auction saved = auctionRepository.save(auction);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
+            System.err.println("FATAL ERROR in createAuction: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Collections.singletonMap("error", "Database/Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Collections.singletonMap("error", "System Error: " + e.getMessage()));
         }
     }
 
