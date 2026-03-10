@@ -171,15 +171,19 @@ public class AuctionController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('ADMIN')")
     public List<Auction> getMyAuctions() {
+        if (!isPremiumOrAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+        }
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
     }
 
     @PostMapping("/upload")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+        if (!isPremiumOrAdmin()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to upload files"));
+        }
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Collections.singletonMap("error", "File is empty"));
@@ -206,8 +210,10 @@ public class AuctionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public Auction createAuction(@RequestBody Auction auction) {
+        if (!isPremiumOrAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required to create auctions");
+        }
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email;
         if (principal instanceof UserDetails) {
@@ -230,16 +236,20 @@ public class AuctionController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStats() {
+        if (!isPremiumOrAdmin()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required"));
+        }
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalAuctions", auctionRepository.count());
         return ResponseEntity.ok(stats);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
+        if (!isPremiumOrAdmin()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to update auctions"));
+        }
         return auctionRepository.findById(id).map(auction -> {
             // Update fields (admins can edit anything)
             auction.setTitle(updatedAuction.getTitle());
@@ -269,8 +279,10 @@ public class AuctionController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
+        if (!isPremiumOrAdmin()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to delete auctions"));
+        }
         System.out.println("Delete request received for auction ID: " + id);
         return auctionRepository.findById(id).map(auction -> {
             // Perform Hard Delete (remove from database)

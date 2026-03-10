@@ -57,14 +57,14 @@ public class WebSecurityConfig {
                         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
                                 "Cross-Origin-Embedder-Policy", "unsafe-none"))
                         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
-                                "Cross-Origin-Opener-Policy", "unsafe-none")))
+                                "Cross-Origin-Opener-Policy", "same-origin-allow-popups")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // Public GET requests
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions", "/api/auctions/**").permitAll()
                         // Protect all other methods (POST, PUT, DELETE) and admin paths
-                        .requestMatchers("/api/auctions/**").authenticated()
+                        .requestMatchers("/api/auctions", "/api/auctions/**").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());

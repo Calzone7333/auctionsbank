@@ -37,19 +37,27 @@ public class UserController {
 
     @GetMapping("/stats")
     public ResponseEntity<?> getStats() {
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Admin role required");
+        }
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
-        stats.put("totalUsers", userRepository.count());
         stats.put("totalUsers", userRepository.count());
         return ResponseEntity.ok(stats);
     }
 
     @GetMapping
     public java.util.List<User> getAllUsers() {
+        if (!isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+        }
         return userRepository.findAll();
     }
 
     @PatchMapping("/{id}/role")
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody java.util.Map<String, String> request) {
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Admin role required");
+        }
         String newRoleStr = request.get("role");
         if (newRoleStr == null) {
             return ResponseEntity.badRequest().body("Role cannot be null");
@@ -66,5 +74,18 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid role specified.");
         }
+    }
+
+    private boolean isAdmin() {
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return false;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) principal;
+            return userRepository.findByEmail(userDetails.getUsername())
+                .map(u -> u.getRole() == User.Role.ADMIN)
+                .orElse(false);
+        }
+        return false;
     }
 }
