@@ -62,18 +62,10 @@ public class WebSecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // Public GET requests
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").permitAll()
-                        // Admin-specific paths
-                        .requestMatchers("/api/auctions/my", "/api/auctions/upload", "/api/auctions/stats").hasRole("ADMIN")
-                        // Admin management (ALL Methods for these paths except GET which is partially open above)
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasRole("ADMIN")
-                        // General User context
-                        .requestMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions", "/api/auctions/**").permitAll()
+                        // Protect all other methods (POST, PUT, DELETE) and admin paths
+                        .requestMatchers("/api/auctions/**").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 

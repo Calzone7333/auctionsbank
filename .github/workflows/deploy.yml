@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # deploy only when pushing to main branch
+  workflow_dispatch: # allows manual trigger from GitHub Actions tab
 
 jobs:
   deploy:
@@ -86,14 +87,17 @@ jobs:
       - name: Restart Backend
         run: |
           ssh -p 19919 -o StrictHostKeyChecking=no prakash@103.181.108.248 << 'EOF'
-            # Navigate to the server directory so that uploads folder gets created correctly
+            # Navigate to the server directory
             cd /home/prakash/apps/auctionsbank/server
 
-            # Stop existing backend if running
-            pkill -f 'aquection-server' || true
+            # Stop existing backend on port 8083
+            echo "Stopping existing app..."
+            fuser -k 8083/tcp || pkill -f 'aquection-server' || true
+            sleep 5 # Wait for the port to be fully cleared
             
             # Start new backend in background
+            echo "Starting new app..."
             nohup java -jar target/aquection-server-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
             
-            echo "AuctionsBank Deployment Complete!"
+            echo "AuctionsBank Deployment Complete! Please wait 15-30 seconds for the app to start."
           EOF

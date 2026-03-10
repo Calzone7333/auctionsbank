@@ -132,12 +132,7 @@ public class AuctionController {
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
         validateNotDirectBrowserRequest();
-        try {
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Access Denied: Direct browser access to API is prohibited.");
-        }
-
+        
         List<Auction> auctions;
         if (city != null) {
             auctions = auctionRepository.findByCityNameContainingIgnoreCase(city);
@@ -157,25 +152,33 @@ public class AuctionController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
         validateNotDirectBrowserRequest();
-        try {
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Access Denied: Direct browser access to API is prohibited.");
-        }
-
+        
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
                 .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/debug-auth")
+    public ResponseEntity<?> debugAuth() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        java.util.Map<String, Object> debug = new java.util.HashMap<>();
+        debug.put("name", auth.getName());
+        debug.put("authorities", auth.getAuthorities());
+        debug.put("isAuthenticated", auth.isAuthenticated());
+        debug.put("principal", auth.getPrincipal());
+        return ResponseEntity.ok(debug);
+    }
+
     @GetMapping("/my")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<Auction> getMyAuctions() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
     }
 
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
@@ -203,6 +206,7 @@ public class AuctionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Auction createAuction(@RequestBody Auction auction) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email;
@@ -226,6 +230,7 @@ public class AuctionController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStats() {
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalAuctions", auctionRepository.count());
@@ -233,6 +238,7 @@ public class AuctionController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
         return auctionRepository.findById(id).map(auction -> {
             // Update fields (admins can edit anything)
@@ -263,6 +269,7 @@ public class AuctionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
         System.out.println("Delete request received for auction ID: " + id);
         return auctionRepository.findById(id).map(auction -> {
