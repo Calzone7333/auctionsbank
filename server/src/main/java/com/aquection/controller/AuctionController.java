@@ -38,41 +38,17 @@ public class AuctionController {
     @Autowired
     private UserRepository userRepository;
 
-    private void validateNotDirectBrowserRequest() {
-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-        if (attr == null) return;
-        HttpServletRequest request = attr.getRequest();
-
-        // Only restrict GET requests. POST/PUT/DELETE are always legitimate API calls.
-        if ("GET".equalsIgnoreCase(request.getMethod())) {
-            String acceptHeader = request.getHeader("Accept");
-            String fetchMode = request.getHeader("Sec-Fetch-Mode");
-
-            // Browsers navigating to a URL directly send "navigate" fetch mode 
-            // and expect "text/html" responses.
-            boolean isBrowserNavigation = "navigate".equalsIgnoreCase(fetchMode) || 
-                                         (acceptHeader != null && acceptHeader.contains("text/html"));
-
-            if (isBrowserNavigation) {
-                throw new org.springframework.security.access.AccessDeniedException(
-                        "Direct API access via browser is prohibited for security reasons.");
-            }
-        }
-    }
-
     private boolean isPremiumOrAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return false;
         }
 
-        // 1. Trust the authorities from the token first
-        boolean hasAdminRole = auth.getAuthorities().stream()
+        // 1. Trust mapping from authorities
+        boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-        
-        if (hasAdminRole) return true;
+        if (isAdmin) return true;
 
-        // 2. Check for Premium if not an admin
         Object principal = auth.getPrincipal();
         if (principal instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) principal;
@@ -136,7 +112,6 @@ public class AuctionController {
     public ResponseEntity<?> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
-        validateNotDirectBrowserRequest();
         
         List<Auction> auctions;
         if (city != null) {
@@ -156,8 +131,6 @@ public class AuctionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
-        validateNotDirectBrowserRequest();
-        
         boolean fullAccess = isPremiumOrAdmin();
         return auctionRepository.findById(id)
                 .map(a -> ResponseEntity.ok(maskAuction(a, fullAccess)))
@@ -176,19 +149,13 @@ public class AuctionController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<?> getMyAuctions() {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to view your auctions"));
-        }
+    public List<Auction> getMyAuctions() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return ResponseEntity.ok(auctionRepository.findByCreatedByEmail(userDetails.getUsername()));
+        return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
     }
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to upload files"));
-        }
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Collections.singletonMap("error", "File is empty"));
@@ -215,10 +182,7 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createAuction(@RequestBody Auction auction) {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to create auctions"));
-        }
+    public Auction createAuction(@RequestBody Auction auction) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email;
         if (principal instanceof UserDetails) {
@@ -228,8 +192,7 @@ public class AuctionController {
         }
         
         auction.setCreatedByEmail(email);
-        Auction saved = auctionRepository.save(auction);
-        return ResponseEntity.ok(saved);
+        return auctionRepository.save(auction);
     }
 
     @GetMapping("/public/stats")
@@ -243,9 +206,6 @@ public class AuctionController {
 
     @GetMapping("/stats")
     public ResponseEntity<?> getStats() {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required"));
-        }
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalAuctions", auctionRepository.count());
         return ResponseEntity.ok(stats);
@@ -253,9 +213,6 @@ public class AuctionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to update auctions"));
-        }
         return auctionRepository.findById(id).map(auction -> {
             // Update fields (admins can edit anything)
             auction.setTitle(updatedAuction.getTitle());
@@ -286,9 +243,6 @@ public class AuctionController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
-        if (!isPremiumOrAdmin()) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Admin role required to delete auctions"));
-        }
         System.out.println("Delete request received for auction ID: " + id);
         return auctionRepository.findById(id).map(auction -> {
             // Perform Hard Delete (remove from database)
