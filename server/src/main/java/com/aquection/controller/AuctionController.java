@@ -39,7 +39,25 @@ public class AuctionController {
     private UserRepository userRepository;
 
     private void validateNotDirectBrowserRequest() {
-        // Direct browser check disabled because it incorrectly blocks legítimate fetch requests on certain browsers/OS.
+        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        if (attr == null) return;
+        HttpServletRequest request = attr.getRequest();
+
+        // Only restrict GET requests. POST/PUT/DELETE are always legitimate API calls.
+        if ("GET".equalsIgnoreCase(request.getMethod())) {
+            String acceptHeader = request.getHeader("Accept");
+            String fetchMode = request.getHeader("Sec-Fetch-Mode");
+
+            // Browsers navigating to a URL directly send "navigate" fetch mode 
+            // and expect "text/html" responses.
+            boolean isBrowserNavigation = "navigate".equalsIgnoreCase(fetchMode) || 
+                                         (acceptHeader != null && acceptHeader.contains("text/html"));
+
+            if (isBrowserNavigation) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Direct API access via browser is prohibited for security reasons.");
+            }
+        }
     }
 
     private boolean isPremiumOrAdmin() {
@@ -113,8 +131,8 @@ public class AuctionController {
     public ResponseEntity<?> getAllAuctions(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String bank) {
+        validateNotDirectBrowserRequest();
         try {
-            validateNotDirectBrowserRequest();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Access Denied: Direct browser access to API is prohibited.");
@@ -138,8 +156,8 @@ public class AuctionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getAuctionById(@PathVariable Long id) {
+        validateNotDirectBrowserRequest();
         try {
-            validateNotDirectBrowserRequest();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Access Denied: Direct browser access to API is prohibited.");

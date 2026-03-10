@@ -61,11 +61,17 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Public GET requests
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").permitAll()
+                        // Admin-specific paths
                         .requestMatchers("/api/auctions/my", "/api/auctions/upload", "/api/auctions/stats").hasRole("ADMIN")
-                        .requestMatchers("/api/auctions", "/api/auctions/**").hasRole("ADMIN")
+                        // Admin management (ALL Methods for these paths except GET which is partially open above)
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasRole("ADMIN")
+                        // General User context
                         .requestMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/uploads/**").permitAll()
@@ -80,6 +86,7 @@ public class WebSecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        // Fully list all origins used in your environment
         configuration.setAllowedOrigins(java.util.Arrays.asList(
                 "http://localhost:5173",
                 "http://localhost:5174",
@@ -90,7 +97,9 @@ public class WebSecurityConfig {
                 "https://www.madrasauction.com",
                 "http://www.madrasauction.com"));
         configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Sec-Fetch-Mode"));
+        // Standard headers used by your Auth system and browser
+        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+        configuration.setExposedHeaders(java.util.Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
