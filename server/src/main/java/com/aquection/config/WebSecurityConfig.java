@@ -64,10 +64,12 @@ public class WebSecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/public/stats").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/*").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasRole("ADMIN")
-                        .requestMatchers("/api/users", "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auctions/my", "/api/auctions/upload", "/api/auctions/stats").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions", "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers("/api/users/me").hasAnyAuthority("ROLE_USER", "USER", "ROLE_ADMIN", "ADMIN")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
 

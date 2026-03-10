@@ -17,7 +17,6 @@ public class UserController {
     UserRepository userRepository;
 
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<?> getCurrentUser() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = userDetails.getUsername();
@@ -37,7 +36,6 @@ public class UserController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStats() {
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalUsers", userRepository.count());
@@ -46,13 +44,11 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public java.util.List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
     @PatchMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody java.util.Map<String, String> request) {
         String newRoleStr = request.get("role");
         if (newRoleStr == null) {

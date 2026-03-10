@@ -152,14 +152,12 @@ public class AuctionController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('ADMIN')")
     public List<Auction> getMyAuctions() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return auctionRepository.findByCreatedByEmail(userDetails.getUsername());
     }
 
     @PostMapping("/upload")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
@@ -210,7 +208,6 @@ public class AuctionController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStats() {
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalAuctions", auctionRepository.count());
@@ -218,7 +215,6 @@ public class AuctionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
         return auctionRepository.findById(id).map(auction -> {
             // Update fields (admins can edit anything)
@@ -249,7 +245,6 @@ public class AuctionController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
         System.out.println("Delete request received for auction ID: " + id);
         return auctionRepository.findById(id).map(auction -> {
