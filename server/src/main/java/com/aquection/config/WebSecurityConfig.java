@@ -61,10 +61,9 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Public GET requests
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions", "/api/auctions/**").permitAll()
-                        // Protect all other methods (POST, PUT, DELETE) and admin paths
-                        .requestMatchers("/api/auctions", "/api/auctions/**").authenticated()
+                        // Allow paths to reach the Controller where we handle permissions manually
+                        // This prevents Spring Security from giving a generic 403 without a message.
+                        .requestMatchers("/api/auctions", "/api/auctions/**").permitAll()
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated());
