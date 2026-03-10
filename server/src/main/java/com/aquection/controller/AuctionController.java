@@ -182,17 +182,27 @@ public class AuctionController {
     }
 
     @PostMapping
-    public Auction createAuction(@RequestBody Auction auction) {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email;
-        if (principal instanceof UserDetails) {
-            email = ((UserDetails) principal).getUsername();
-        } else {
-            email = principal.toString();
+    public ResponseEntity<?> createAuction(@RequestBody Auction auction) {
+        if (!isPremiumOrAdmin()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access Denied: You must be an Administrator to post auctions."));
         }
         
-        auction.setCreatedByEmail(email);
-        return auctionRepository.save(auction);
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String email;
+            if (principal instanceof UserDetails) {
+                email = ((UserDetails) principal).getUsername();
+            } else {
+                email = principal.toString();
+            }
+            
+            auction.setCreatedByEmail(email);
+            Auction saved = auctionRepository.save(auction);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Collections.singletonMap("error", "Server Error: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/public/stats")
