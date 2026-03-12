@@ -7,8 +7,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                display: ['"Outfit"', 'sans-serif'],
+                sans: ['"Roboto"', 'sans-serif'],
+                display: ['"Roboto"', 'sans-serif'],
             },
             colors: {
                 'aq-blue': '#032D5F',

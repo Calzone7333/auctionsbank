@@ -30,8 +30,37 @@ import {
     ChevronsRight,
     ExternalLink,
     FileDown,
-    Eye
+    Eye,
+    Menu,
+    X,
+    Search,
+    Filter,
+    ArrowUpRight,
+    ArrowDownRight,
+    CheckCircle2,
+    Clock,
+    Target,
+    Activity,
+    CreditCard,
+    Briefcase
 } from 'lucide-react';
+import { 
+    AreaChart, 
+    Area, 
+    BarChart,
+    Bar,
+    LineChart,
+    Line,
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
+    Legend,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell
+} from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getFileUrl } from '../apiConfig';
@@ -47,6 +76,14 @@ const AdminDashboard = () => {
     const [allUsers, setAllUsers] = useState([]);
     const [allAuctions, setAllAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    // Search & Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCity, setFilterCity] = useState('');
+    const [filterBank, setFilterBank] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [chartRange, setChartRange] = useState('7days');
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -417,7 +454,7 @@ const AdminDashboard = () => {
                 .catch(err => console.error("Error fetching users:", err));
         }
 
-        if (activeTab === 'auctions' || activeTab === 'my-auctions') {
+        if (activeTab === 'overview' || activeTab === 'auctions' || activeTab === 'my-auctions') {
             if (user?.token) {
                 fetch(`${API_BASE_URL}/auctions/admin/all`, {
                     headers: { 'Authorization': `Bearer ${user.token}` }
@@ -507,12 +544,23 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-slate-50 font-sans flex">
 
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col fixed h-full z-10">
-                <div className="p-6 border-b border-slate-100">
+            <aside className={`w-64 bg-white border-r border-slate-200 flex flex-col fixed h-full z-40 transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <h1 className="text-xl font-display font-black uppercase tracking-tight text-brand-dark flex items-center gap-2">
                         <ShieldCheck className="text-brand-blue w-6 h-6" /> Admin Control
                     </h1>
+                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 <div className="flex-1 p-4 space-y-2">
@@ -521,15 +569,20 @@ const AdminDashboard = () => {
                     <SidebarItem id="my-auctions" icon={ClipboardList} label="Admin Auctions" />
                     <SidebarItem id="users" icon={Users} label="User Management" />
                     <SidebarItem id="auctions" icon={List} label="All Auctions" />
-
                 </div>
             </aside>
 
             {/* Main Content Area */}
             <main className="flex-1 lg:ml-64 flex flex-col h-screen overflow-hidden">
                 {/* Fixed Top Header */}
-                <header className="bg-white border-b border-slate-200 px-6 lg:px-10 py-3 flex justify-end items-center z-20 shrink-0">
-                    <div className="flex items-center gap-2">
+                <header className="bg-white border-b border-slate-200 px-6 lg:px-10 py-3 flex justify-between items-center z-20 shrink-0">
+                    <button 
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="lg:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                    <div className="flex items-center gap-2 ml-auto">
                         <button
                             onClick={() => navigate('/')}
                             className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-brand-dark border border-slate-200 transition-all shadow-sm"
@@ -565,63 +618,535 @@ const AdminDashboard = () => {
                     <div className="max-w-6xl mx-auto pb-10">
 
                         {activeTab === 'overview' && (
-                            <div className="space-y-8 max-w-4xl mx-auto">
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <h2 className="text-3xl font-display font-black uppercase tracking-tight text-brand-dark">Platform Health</h2>
-                                        <p className="text-slate-500 mt-1">Real-time statistics for Madrasauction</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Server Status</p>
-                                        <div className="flex items-center gap-2 text-emerald-500 font-bold">
-                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-                                            Operational
+                            <div className="space-y-6 max-w-4xl mx-auto">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h2 className="text-2xl font-display font-black tracking-tight text-brand-dark">Dashboard Overview</h2>
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative group">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search Dashboard..." 
+                                                className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue outline-none transition-all w-48"
+                                            />
+                                        </div>
+                                        <div className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-brand-dark cursor-pointer transition-all">
+                                            <Bell className="w-4 h-4" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h3 className="text-slate-500 font-medium text-xs uppercase tracking-wider">Total Members</h3>
-                                            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md"><Users className="w-4 h-4" /></div>
+                                {/* Top Row: 4 Stat Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {[
+                                        { label: 'Total Auctions', value: stats.totalAuctions, change: '+12%', icon: List, color: 'text-brand-blue', bg: 'bg-blue-50' },
+                                        { label: 'Platform Users', value: stats.totalUsers, change: '+5%', icon: Users, color: 'text-brand-blue', bg: 'bg-blue-50' },
+                                        { label: 'Active Listings', value: allAuctions.length, change: '+8%', icon: Zap, color: 'text-brand-blue', bg: 'bg-blue-50' },
+                                        { label: 'Success Rate', value: '92%', change: '+3%', icon: Target, color: 'text-brand-blue', bg: 'bg-blue-50' }
+                                    ].map((s, i) => (
+                                        <div key={i} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`p-2.5 ${s.bg} ${s.color} rounded-2xl group-hover:scale-110 transition-transform`}>
+                                                    <s.icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex items-center gap-1 px-2 py-1 bg-brand-blue/10 text-brand-blue rounded-lg text-[10px] font-black">
+                                                    <ArrowUpRight className="w-3 h-3" /> {s.change}
+                                                </div>
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{s.label}</p>
+                                            <p className="text-2xl font-display font-black text-brand-dark tracking-tight">{s.value}</p>
+                                            <p className="text-[10px] text-slate-400 mt-2">vs last week</p>
                                         </div>
-                                        <p className="text-2xl font-display font-black text-brand-dark">{stats.totalUsers}</p>
-                                        <p className="text-[10px] text-green-500 mt-1 font-bold">+12.5% vs last month</p>
+                                    ))}
+                                </div>
+
+                                {/* Middle Row: Charts & Score */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                    {/* Main Area Chart */}
+                                    <div className="lg:col-span-8 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div>
+                                                <h3 className="text-base font-display font-black text-brand-dark">Property Growth</h3>
+                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                                    {chartRange === '7days' ? 'Daily velocity (7 Days)' : 
+                                                     chartRange === '30days' ? 'Daily velocity (30 Days)' : 
+                                                     'Monthly velocity (Full Year)'}
+                                                </p>
+                                            </div>
+                                            <select 
+                                                value={chartRange}
+                                                onChange={(e) => setChartRange(e.target.value)}
+                                                className="text-[10px] font-black uppercase tracking-widest border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none bg-slate-50 cursor-pointer hover:border-brand-blue/50 transition-colors"
+                                            >
+                                                <option value="7days">Last 7 Days</option>
+                                                <option value="30days">Last 30 Days</option>
+                                                <option value="12months">Yearly (Monthly)</option>
+                                            </select>
+                                        </div>
+                                        <div className="h-[280px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart 
+                                                    data={(() => {
+                                                        const now = new Date();
+                                                        if (chartRange === '12months') {
+                                                            const last12Months = [...Array(12)].map((_, i) => {
+                                                                const d = new Date();
+                                                                d.setMonth(d.getMonth() - i);
+                                                                return {
+                                                                    key: `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`,
+                                                                    label: d.toLocaleDateString('en-US', { month: 'short' })
+                                                                };
+                                                            }).reverse();
+
+                                                            const counts = allAuctions.reduce((acc, auction) => {
+                                                                const date = new Date(auction.createdAt);
+                                                                const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                                                                acc[key] = (acc[key] || 0) + 1;
+                                                                return acc;
+                                                            }, {});
+
+                                                            return last12Months.map(m => ({
+                                                                name: m.label,
+                                                                uploads: counts[m.key] || 0
+                                                            }));
+                                                        }
+
+                                                        const days = chartRange === '30days' ? 30 : 7;
+                                                        const lastNDays = [...Array(days)].map((_, i) => {
+                                                            const d = new Date();
+                                                            d.setDate(d.getDate() - i);
+                                                            return d.toISOString().split('T')[0];
+                                                        }).reverse();
+
+                                                        const counts = allAuctions.reduce((acc, auction) => {
+                                                            const date = auction.createdAt?.split('T')[0];
+                                                            if (date) acc[date] = (acc[date] || 0) + 1;
+                                                            return acc;
+                                                        }, {});
+
+                                                        return lastNDays.map(date => ({
+                                                            name: new Date(date).toLocaleDateString('en-US', { 
+                                                                day: days === 7 ? 'numeric' : 'numeric', 
+                                                                month: days === 7 ? 'short' : 'short' 
+                                                            }),
+                                                            uploads: counts[date] || 0
+                                                        }));
+                                                    })()}
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="#0066FF" stopOpacity={0.1}/>
+                                                            <stop offset="95%" stopColor="#0066FF" stopOpacity={0}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis 
+                                                        dataKey="name" 
+                                                        axisLine={false} 
+                                                        tickLine={false} 
+                                                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
+                                                        dy={10}
+                                                        interval={chartRange === '30days' ? 4 : 0}
+                                                    />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
+                                                    <Tooltip 
+                                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '11px' }}
+                                                    />
+                                                    <Area 
+                                                        type="monotone" 
+                                                        dataKey="uploads" 
+                                                        stroke="#0066FF" 
+                                                        strokeWidth={4} 
+                                                        fillOpacity={1} 
+                                                        fill="url(#chartGradient)" 
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
                                     </div>
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h3 className="text-slate-500 font-medium text-xs uppercase tracking-wider">Active Auctions</h3>
-                                            <div className="p-1.5 bg-purple-50 text-purple-600 rounded-md"><List className="w-4 h-4" /></div>
+
+                                    {/* Breakdown Donut Chart */}
+                                    <div className="lg:col-span-4 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm transition-all">
+                                        <h3 className="text-base font-display font-black text-brand-dark">Listing Breakdown</h3>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 mb-6">Filtered by selected timeframe</p>
+                                        <div className="h-[180px] w-full relative">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={(() => {
+                                                            const filtered = allAuctions.filter(a => {
+                                                                const createdDate = new Date(a.createdAt);
+                                                                const now = new Date();
+                                                                if (chartRange === '7days') return (now - createdDate) <= 7 * 24 * 60 * 60 * 1000;
+                                                                if (chartRange === '30days') return (now - createdDate) <= 30 * 24 * 60 * 60 * 1000;
+                                                                if (chartRange === '12months') return (now - createdDate) <= 365 * 24 * 60 * 60 * 1000;
+                                                                return true;
+                                                            });
+
+                                                            const counts = filtered.reduce((acc, a) => {
+                                                                const type = a.propertyType || 'Other';
+                                                                acc[type] = (acc[type] || 0) + 1;
+                                                                return acc;
+                                                            }, {});
+                                                            const sorted = Object.entries(counts)
+                                                                .map(([name, value]) => ({ name, value }))
+                                                                .sort((a, b) => b.value - a.value)
+                                                                .slice(0, 4);
+                                                            return sorted.length > 0 ? sorted : [{ name: 'No Data', value: 1 }];
+                                                        })()}
+                                                        cx="50%" cy="50%"
+                                                        innerRadius={50}
+                                                        outerRadius={80}
+                                                        paddingAngle={5}
+                                                        dataKey="value"
+                                                    >
+                                                        {['#0066FF', '#3b82f6', '#93c5fd', '#bae6fd'].map((color, index) => (
+                                                            <Cell key={`cell-${index}`} fill={color} />
+                                                        ))}
+                                                    </Pie>
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <p className="text-2xl font-black text-brand-dark transition-all">
+                                                    {allAuctions.filter(a => {
+                                                        const createdDate = new Date(a.createdAt);
+                                                        const now = new Date();
+                                                        if (chartRange === '7days') return (now - createdDate) <= 7 * 24 * 60 * 60 * 1000;
+                                                        if (chartRange === '30days') return (now - createdDate) <= 30 * 24 * 60 * 60 * 1000;
+                                                        if (chartRange === '12months') return (now - createdDate) <= 365 * 24 * 60 * 60 * 1000;
+                                                        return true;
+                                                    }).length}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Selected</p>
+                                            </div>
                                         </div>
-                                        <p className="text-2xl font-display font-black text-brand-dark">{stats.totalAuctions}</p>
-                                        <p className="text-[10px] text-brand-blue mt-1 font-bold">{stats.totalAuctions} live listings</p>
+                                        <div className="mt-6 space-y-3">
+                                            {(() => {
+                                                const filtered = allAuctions.filter(a => {
+                                                    const createdDate = new Date(a.createdAt);
+                                                    const now = new Date();
+                                                    if (chartRange === '7days') return (now - createdDate) <= 7 * 24 * 60 * 60 * 1000;
+                                                    if (chartRange === '30days') return (now - createdDate) <= 30 * 24 * 60 * 60 * 1000;
+                                                    if (chartRange === '12months') return (now - createdDate) <= 365 * 24 * 60 * 60 * 1000;
+                                                    return true;
+                                                });
+                                                const counts = filtered.reduce((acc, a) => {
+                                                    const type = a.propertyType || 'Other';
+                                                    acc[type] = (acc[type] || 0) + 1;
+                                                    return acc;
+                                                }, {});
+                                                const total = filtered.length || 1;
+                                                const sorted = Object.entries(counts)
+                                                    .map(([name, value]) => ({ name, value }))
+                                                    .sort((a, b) => b.value - a.value)
+                                                    .slice(0, 3);
+                                                const colors = ['bg-brand-blue', 'bg-blue-500', 'bg-blue-300'];
+                                                return sorted.map((item, i) => (
+                                                    <div key={i} className="flex items-center justify-between text-[11px] font-bold">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${colors[i]}`} />
+                                                            <span className="text-slate-500 truncate max-w-[100px]">{item.name}</span>
+                                                        </div>
+                                                        <span className="text-brand-dark uppercase tracking-widest">{Math.round((item.value / total) * 100)}%</span>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                    <h3 className="text-base font-display font-black uppercase tracking-tight text-brand-dark mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-brand-blue" /> Quick Actions</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <button
-                                            onClick={() => setActiveTab('post-auction')}
-                                            className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-brand-blue hover:bg-blue-50 transition-all text-left group"
-                                        >
-                                            <div className="w-8 h-8 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                                <PlusSquare className="w-4 h-4" />
+                                {/* New Section: Market Insights */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                    {/* User Growth Line Chart */}
+                                    <div className="lg:col-span-7 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <h3 className="text-base font-display font-black text-brand-dark">Community Growth</h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">User registration velocity</p>
                                             </div>
-                                            <p className="font-bold text-sm text-brand-dark">Post New Auction</p>
-                                            <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">Add a new property listing.</p>
-                                        </button>
-                                        <button
-                                            onClick={() => setActiveTab('users')}
-                                            className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-brand-blue hover:bg-blue-50 transition-all text-left group"
-                                        >
-                                            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                                <Users className="w-4 h-4" />
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black italic">
+                                                    <Users className="w-3 h-3" /> {allUsers.length} MEMBERS
+                                                </div>
                                             </div>
-                                            <p className="font-bold text-sm text-brand-dark">Manage Users</p>
-                                            <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">Review and manage members.</p>
-                                        </button>
+                                        </div>
+                                        <div className="h-[220px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart
+                                                    data={(() => {
+                                                        const last14Days = [...Array(14)].map((_, i) => {
+                                                            const d = new Date();
+                                                            d.setDate(d.getDate() - i);
+                                                            return d.toISOString().split('T')[0];
+                                                        }).reverse();
+                                                        
+                                                        const counts = allUsers.reduce((acc, user) => {
+                                                            const date = user.createdAt?.split('T')[0] || user.dateJoined?.split('T')[0];
+                                                            if (date) acc[date] = (acc[date] || 0) + 1;
+                                                            return acc;
+                                                        }, {});
+
+                                                        return last14Days.map(date => ({
+                                                            name: new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+                                                            users: counts[date] || 0
+                                                        }));
+                                                    })()}
+                                                >
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis 
+                                                        dataKey="name" 
+                                                        axisLine={false} 
+                                                        tickLine={false} 
+                                                        tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} 
+                                                        interval={2}
+                                                    />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} />
+                                                    <Tooltip 
+                                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
+                                                    />
+                                                    <Line 
+                                                        type="stepAfter" 
+                                                        dataKey="users" 
+                                                        stroke="#0066FF" 
+                                                        strokeWidth={3} 
+                                                        dot={{ r: 4, fill: '#0066FF', strokeWidth: 2, stroke: '#fff' }}
+                                                        activeDot={{ r: 6, strokeWidth: 0 }}
+                                                    />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* Price Segment Bar Chart */}
+                                    <div className="lg:col-span-5 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                                        <h3 className="text-base font-display font-black text-brand-dark mb-1">Price Segments</h3>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">Auction distribution by Reserve Price</p>
+                                        <div className="h-[220px] w-full">
+                                            {(() => {
+                                                const priceRanges = [
+                                                    { name: '< 50L', min: 0, max: 5000000, color: '#93c5fd' },
+                                                    { name: '50L - 1Cr', min: 5000000, max: 10000000, color: '#60a5fa' },
+                                                    { name: '1Cr - 5Cr', min: 10000000, max: 50000000, color: '#3b82f6' },
+                                                    { name: '5Cr+', min: 50000000, max: Infinity, color: '#0066FF' }
+                                                ];
+                                                const priceData = priceRanges.map(r => ({
+                                                    ...r,
+                                                    count: allAuctions.filter(a => {
+                                                        const price = Number(a.reservePrice);
+                                                        return price >= r.min && price < r.max;
+                                                    }).length
+                                                }));
+                                                return (
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <BarChart data={priceData} layout="vertical" margin={{ left: 20 }}>
+                                                            <XAxis type="number" hide />
+                                                            <YAxis 
+                                                                dataKey="name" 
+                                                                type="category" 
+                                                                axisLine={false} 
+                                                                tickLine={false} 
+                                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} 
+                                                            />
+                                                            <Tooltip 
+                                                                cursor={{ fill: '#f8fafc' }}
+                                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
+                                                            />
+                                                            <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={20}>
+                                                                {priceData.map((entry, idx) => (
+                                                                    <Cell key={`cell-${idx}`} fill={entry.color} />
+                                                                ))}
+                                                            </Bar>
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section: Strategic Insights */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
+                                    {/* Top Cities Distribution */}
+                                    <div className="lg:col-span-6 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div>
+                                                <h3 className="text-base font-display font-black text-brand-dark">Geographic Reach</h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Top cities by auction volume</p>
+                                            </div>
+                                            <div className="p-2 bg-brand-blue/10 text-brand-blue rounded-xl">
+                                                <MapPin className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                        <div className="h-[250px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart
+                                                    data={(() => {
+                                                        const cityCounts = allAuctions.reduce((acc, a) => {
+                                                            const city = a.cityName || 'Unknown';
+                                                            acc[city] = (acc[city] || 0) + 1;
+                                                            return acc;
+                                                        }, {});
+                                                        return Object.entries(cityCounts)
+                                                            .map(([name, count]) => ({ name, count }))
+                                                            .sort((a, b) => b.count - a.count)
+                                                            .slice(0, 6);
+                                                    })()}
+                                                    margin={{ bottom: 20 }}
+                                                >
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis 
+                                                        dataKey="name" 
+                                                        axisLine={false} 
+                                                        tickLine={false} 
+                                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} 
+                                                    />
+                                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
+                                                    <Tooltip 
+                                                        cursor={{ fill: '#f8fafc' }}
+                                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
+                                                    />
+                                                    <Bar dataKey="count" fill="#0066FF" radius={[8, 8, 0, 0]} barSize={35} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* Bank Participation Radar-like Bar Chart */}
+                                    <div className="lg:col-span-6 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div>
+                                                <h3 className="text-base font-display font-black text-brand-dark">Banking Partners</h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional distribution</p>
+                                            </div>
+                                            <div className="p-2 bg-brand-blue/10 text-brand-blue rounded-xl">
+                                                <Briefcase className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {(() => {
+                                                const bankCounts = allAuctions.reduce((acc, a) => {
+                                                    const bank = a.bankName || 'Other';
+                                                    acc[bank] = (acc[bank] || 0) + 1;
+                                                    return acc;
+                                                }, {});
+                                                const total = allAuctions.length || 1;
+                                                return Object.entries(bankCounts)
+                                                    .map(([name, count]) => ({ name, count }))
+                                                    .sort((a, b) => b.count - a.count)
+                                                    .slice(0, 5)
+                                                    .map((bank, i) => (
+                                                        <div key={i} className="group">
+                                                            <div className="flex justify-between items-center mb-1.5">
+                                                                <span className="text-xs font-black text-brand-dark group-hover:text-brand-blue transition-colors line-clamp-1">{bank.name}</span>
+                                                                <span className="text-[10px] font-black text-slate-400">{bank.count} Assets</span>
+                                                            </div>
+                                                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-brand-blue transition-all duration-1000 ease-out"
+                                                                    style={{ width: `${(bank.count / total) * 100}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ));
+                                            })()}
+                                        </div>
+                                        <div className="mt-8 pt-6 border-t border-slate-100">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex -space-x-2">
+                                                    {[1,2,3,4].map(i => (
+                                                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 overflow-hidden">
+                                                            BK
+                                                        </div>
+                                                    ))}
+                                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-brand-dark flex items-center justify-center text-[8px] font-black text-white">+2</div>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Institutions</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Row: Recent Activities & Progress */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-6 font-sans">
+                                    {/* Recent Auctions Feed */}
+                                    <div className="lg:col-span-8 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-base font-display font-black text-brand-dark">Recent Submissions</h3>
+                                            <button onClick={() => setActiveTab('auctions')} className="text-[10px] font-black uppercase tracking-widest text-brand-blue hover:underline">View All</button>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {allAuctions.slice(0, 5).map(auction => (
+                                                <div key={auction.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-2xl transition-all group cursor-pointer" onClick={() => navigate(`/auctions/${auction.id}`)}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 border border-slate-200 group-hover:bg-white group-hover:border-brand-blue/30 group-hover:text-brand-blue transition-all">
+                                                            <Building2 className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-brand-dark line-clamp-1">{auction.title}</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-[10px] text-slate-400 font-bold uppercase">{auction.cityName}</span>
+                                                                <span className="text-slate-200">•</span>
+                                                                <span className="text-[10px] font-black text-brand-blue uppercase">{auction.propertyType}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-black text-brand-dark">₹{auction.reservePrice ? Number(auction.reservePrice).toLocaleString('en-IN') : '---'}</p>
+                                                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
+                                                            <span className="text-[10px] font-bold text-brand-blue uppercase tracking-widest">Active</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Score Card & Activity Feed */}
+                                    <div className="lg:col-span-4 space-y-6">
+                                        {/* Status Score Card */}
+                                        <div className="bg-brand-dark p-6 rounded-[2rem] text-white overflow-hidden relative">
+                                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl" />
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-white/60">Property Score</h3>
+                                                <Activity className="w-4 h-4 text-blue-400" />
+                                            </div>
+                                            <div className="flex items-baseline justify-between mb-4">
+                                                <p className="text-3xl font-display font-black tracking-tight">Excellent</p>
+                                                <p className="text-sm font-bold text-blue-400">92%</p>
+                                            </div>
+                                            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-6">
+                                                <div className="w-[92%] h-full bg-brand-blue rounded-full shadow-[0_0_10px_rgba(0,102,255,0.5)]" />
+                                            </div>
+                                            <button 
+                                                onClick={() => setActiveTab('post-auction')}
+                                                className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                                            >
+                                                Boost Platform Score
+                                            </button>
+                                        </div>
+
+                                        {/* Activity Log */}
+                                        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                                            <h3 className="text-base font-display font-black text-brand-dark mb-6">Recent Activity</h3>
+                                            <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                                                {[
+                                                    { label: 'New Auction Uploaded', time: '10:45 AM', color: 'text-blue-500' },
+                                                    { label: 'User Role Updated', time: '09:12 AM', color: 'text-brand-blue' },
+                                                    { label: 'Notice File Processed', time: 'Yesterday', color: 'text-blue-400' }
+                                                ].map((log, i) => (
+                                                    <div key={i} className="flex gap-4 relative">
+                                                        <div className={`w-6 h-6 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center z-10 ${log.color}`}>
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-black text-brand-dark leading-none">{log.label}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{log.time}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1005,13 +1530,13 @@ const AdminDashboard = () => {
                                                                 value={u.role}
                                                                 onChange={(e) => handleRoleUpdate(u.id, e.target.value)}
                                                                 className={`text-xs font-black px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${u.role === 'ADMIN'
-                                                                    ? 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-200'
+                                                                    ? 'bg-blue-50 text-brand-blue border-blue-200 focus:ring-blue-200'
                                                                     : 'bg-slate-50 text-slate-700 border-slate-200 focus:ring-brand-blue/20 hover:bg-slate-100'
                                                                     }`}
                                                                 style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 7l5 5 5-5'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em', paddingRight: '1.75rem' }}
                                                             >
                                                                 <option value="USER" className="font-bold text-slate-700">USER</option>
-                                                                <option value="ADMIN" className="font-bold text-purple-700">ADMIN</option>
+                                                                <option value="ADMIN" className="font-bold text-brand-blue">ADMIN</option>
                                                             </select>
                                                         </td>
                                                         <td className="px-6 py-4 text-sm font-medium text-slate-500">
@@ -1089,6 +1614,41 @@ const AdminDashboard = () => {
                                     <p className="text-sm text-slate-500 mt-1">Master catalog of all property listings.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    {/* Search & Filter Bar */}
+                                    <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex flex-wrap gap-3">
+                                        <div className="relative flex-1 min-w-[200px]">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input 
+                                                type="text"
+                                                placeholder="Search by title, borrower, or city..."
+                                                className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all bg-white"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <select 
+                                                className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
+                                                value={filterCity}
+                                                onChange={(e) => setFilterCity(e.target.value)}
+                                            >
+                                                <option value="">All Cities</option>
+                                                {[...new Set(allAuctions.map(a => a.cityName).filter(Boolean))].sort().map(city => (
+                                                    <option key={city} value={city}>{city}</option>
+                                                ))}
+                                            </select>
+                                            <select 
+                                                className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
+                                                value={filterType}
+                                                onChange={(e) => setFilterType(e.target.value)}
+                                            >
+                                                <option value="">All Types</option>
+                                                {[...new Set(allAuctions.map(a => a.propertyType).filter(Boolean))].sort().map(type => (
+                                                    <option key={type} value={type}>{type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
@@ -1101,113 +1661,143 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {allAuctions
-                                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                                .map(auction => (
-                                                    <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="px-5 py-3">
-                                                            <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                            <p className="text-[11px] font-black text-brand-blue uppercase tracking-wider mt-0.5">{auction.propertyType}</p>
-                                                        </td>
-                                                        <td className="px-5 py-3">
-                                                            <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
-                                                            <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {auction.cityName}</p>
-                                                        </td>
-                                                        <td className="px-5 py-3">
-                                                            <p className="font-bold text-xs text-slate-700">{auction.bankName}</p>
-                                                            <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{auction.bankContactDetails || 'No Contact'}</p>
-                                                        </td>
-                                                        <td className="px-5 py-3">
-                                                            <p className="font-black text-sm text-brand-dark">₹{auction.reservePrice}</p>
-                                                            <p className="text-[10px] text-slate-400 mt-0.5">{new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
-                                                        </td>
-                                                        <td className="px-5 py-3 text-center">
-                                                            {auction.noticeUrl ? (
-                                                                <a 
-                                                                    href={getFileUrl(auction.noticeUrl)} 
-                                                                    target="_blank" 
-                                                                    rel="noreferrer"
-                                                                    className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
-                                                                    title="View/Download Notice"
+                                            {(() => {
+                                                const filteredAuctions = allAuctions.filter(a => {
+                                                    const matchesSearch = !searchTerm || 
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                            field?.toLowerCase().includes(searchTerm.toLowerCase())
+                                                        );
+                                                    const matchesCity = !filterCity || a.cityName === filterCity;
+                                                    const matchesType = !filterType || a.propertyType === filterType;
+                                                    return matchesSearch && matchesCity && matchesType;
+                                                });
+                                                
+                                                return filteredAuctions
+                                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                    .map(auction => (
+                                                        <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                                <p className="text-[11px] font-black text-brand-blue uppercase tracking-wider mt-0.5">{auction.propertyType}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
+                                                                <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {auction.cityName}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-bold text-xs text-slate-700">{auction.bankName}</p>
+                                                                <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{auction.bankContactDetails || 'No Contact'}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                <p className="font-black text-sm text-brand-dark">₹{auction.reservePrice}</p>
+                                                                <p className="text-[10px] text-slate-400 mt-0.5">{new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
+                                                            </td>
+                                                            <td className="px-5 py-3 text-center">
+                                                                {auction.noticeUrl ? (
+                                                                    <a 
+                                                                        href={getFileUrl(auction.noticeUrl)} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer"
+                                                                        className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                        title="View/Download Notice"
+                                                                    >
+                                                                        <FileDown className="w-4 h-4" />
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-slate-300 italic">No File</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-5 py-3 text-right">
+                                                                <button
+                                                                    onClick={() => navigate(`/auctions/${auction.id}`)}
+                                                                    className="p-2 text-slate-400 hover:text-brand-blue hover:bg-slate-50 rounded-lg transition-all"
+                                                                    title="View Details"
                                                                 >
-                                                                    <FileDown className="w-4 h-4" />
-                                                                </a>
-                                                            ) : (
-                                                                <span className="text-[10px] text-slate-300 italic">No File</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-5 py-3 text-right">
-                                                            <button
-                                                                onClick={() => navigate(`/auctions/${auction.id}`)}
-                                                                className="p-2 text-slate-400 hover:text-brand-blue hover:bg-slate-50 rounded-lg transition-all"
-                                                                title="View Details"
-                                                            >
-                                                                <Eye className="w-4 h-4" />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                                    <Eye className="w-4 h-4" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ));
+                                            })()}
                                         </tbody>
                                     </table>
                                 </div>
 
-                                {allAuctions.length > itemsPerPage && (
-                                    <div className="flex justify-center items-center gap-2 py-6">
-                                        <button
-                                            onClick={() => setCurrentPage(1)}
-                                            disabled={currentPage === 1}
-                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
-                                        >
-                                            <ChevronsLeft size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
-                                        >
-                                            <ChevronLeft size={14} />
-                                        </button>
+                                {(() => {
+                                    const filteredAuctions = allAuctions.filter(a => {
+                                        const matchesSearch = !searchTerm || 
+                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                field?.toLowerCase().includes(searchTerm.toLowerCase())
+                                            );
+                                        const matchesCity = !filterCity || a.cityName === filterCity;
+                                        const matchesType = !filterType || a.propertyType === filterType;
+                                        return matchesSearch && matchesCity && matchesType;
+                                    });
+                                    if (filteredAuctions.length === 0) return (
+                                        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
+                                            No auctions found matching your search.
+                                        </div>
+                                    );
+                                    if (filteredAuctions.length <= itemsPerPage) return null;
 
-                                        {(() => {
-                                            const totalPages = Math.ceil(allAuctions.length / itemsPerPage);
-                                            const pages = [];
-                                            const startPage = Math.max(1, currentPage - 2);
-                                            const endPage = Math.min(totalPages, startPage + 4);
-                                            const adjustedStart = Math.max(1, endPage - 4);
+                                    const totalPages = Math.ceil(filteredAuctions.length / itemsPerPage);
+                                    const pages = [];
+                                    const startPage = Math.max(1, currentPage - 2);
+                                    const endPage = Math.min(totalPages, startPage + 4);
+                                    const adjustedStart = Math.max(1, endPage - 4);
 
-                                            for (let i = adjustedStart; i <= endPage; i++) {
-                                                pages.push(
-                                                    <button
-                                                        key={i}
-                                                        onClick={() => setCurrentPage(i)}
-                                                        className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${currentPage === i
-                                                            ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20'
-                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
-                                                            }`}
-                                                    >
-                                                        {i}
-                                                    </button>
-                                                );
-                                            }
-                                            return pages;
-                                        })()}
+                                    return (
+                                        <div className="flex justify-center items-center gap-2 py-6">
+                                            <button
+                                                onClick={() => setCurrentPage(1)}
+                                                disabled={currentPage === 1}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronsLeft size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronLeft size={14} />
+                                            </button>
 
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(allAuctions.length / itemsPerPage)))}
-                                            disabled={currentPage === Math.ceil(allAuctions.length / itemsPerPage)}
-                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
-                                        >
-                                            <ChevronRight size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => setCurrentPage(Math.ceil(allAuctions.length / itemsPerPage))}
-                                            disabled={currentPage === Math.ceil(allAuctions.length / itemsPerPage)}
-                                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
-                                        >
-                                            <ChevronsRight size={14} />
-                                        </button>
-                                    </div>
-                                )}
+                                            {(() => {
+                                                for (let i = adjustedStart; i <= endPage; i++) {
+                                                    pages.push(
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setCurrentPage(i)}
+                                                            className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${currentPage === i
+                                                                ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20'
+                                                                : 'bg-white text-slate-500 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+                                                                }`}
+                                                        >
+                                                            {i}
+                                                        </button>
+                                                    );
+                                                }
+                                                return pages;
+                                            })()}
+
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronRight size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                disabled={currentPage === totalPages}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-blue hover:border-brand-blue disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:border-slate-200 transition-all"
+                                            >
+                                                <ChevronsRight size={14} />
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 
@@ -1218,6 +1808,41 @@ const AdminDashboard = () => {
                                     <p className="text-sm text-slate-500 mt-1">Properties posted by you. You have full edit access to these.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    {/* Search & Filter Bar */}
+                                    <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex flex-wrap gap-3">
+                                        <div className="relative flex-1 min-w-[200px]">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input 
+                                                type="text"
+                                                placeholder="Search your postings..."
+                                                className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all bg-white"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <select 
+                                                className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
+                                                value={filterCity}
+                                                onChange={(e) => setFilterCity(e.target.value)}
+                                            >
+                                                <option value="">All Cities</option>
+                                                {[...new Set(allAuctions.filter(a => a.createdByEmail === user?.email).map(a => a.cityName).filter(Boolean))].sort().map(city => (
+                                                    <option key={city} value={city}>{city}</option>
+                                                ))}
+                                            </select>
+                                            <select 
+                                                className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
+                                                value={filterType}
+                                                onChange={(e) => setFilterType(e.target.value)}
+                                            >
+                                                <option value="">All Types</option>
+                                                {[...new Set(allAuctions.filter(a => a.createdByEmail === user?.email).map(a => a.propertyType).filter(Boolean))].sort().map(type => (
+                                                    <option key={type} value={type}>{type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 border-b border-slate-100">
                                             <tr>
@@ -1232,7 +1857,17 @@ const AdminDashboard = () => {
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
                                                 const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
-                                                return myAuctions
+                                                const filteredMyAuctions = myAuctions.filter(a => {
+                                                    const matchesSearch = !searchTerm || 
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                            field?.toLowerCase().includes(searchTerm.toLowerCase())
+                                                        );
+                                                    const matchesCity = !filterCity || a.cityName === filterCity;
+                                                    const matchesType = !filterType || a.propertyType === filterType;
+                                                    return matchesSearch && matchesCity && matchesType;
+                                                });
+
+                                                return filteredMyAuctions
                                                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                                     .map(auction => (
                                                         <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
@@ -1320,23 +1955,52 @@ const AdminDashboard = () => {
                                                         </tr>
                                                     ));
                                             })()}
-                                            {allAuctions.filter(a => a.createdByEmail === user?.email).length === 0 && (
-                                                <tr>
-                                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
-                                                        You haven't posted any auctions yet.
-                                                        <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
-                                                    </td>
-                                                </tr>
-                                            )}
+                                            {(() => {
+                                                const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                                const filteredMyAuctions = myAuctions.filter(a => {
+                                                    const matchesSearch = !searchTerm || 
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                            field?.toLowerCase().includes(searchTerm.toLowerCase())
+                                                        );
+                                                    const matchesCity = !filterCity || a.cityName === filterCity;
+                                                    const matchesType = !filterType || a.propertyType === filterType;
+                                                    return matchesSearch && matchesCity && matchesType;
+                                                });
+                                                if (filteredMyAuctions.length === 0 && myAuctions.length > 0) return (
+                                                    <tr>
+                                                        <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">
+                                                            No matches found for your search.
+                                                        </td>
+                                                    </tr>
+                                                );
+                                                if (myAuctions.length === 0) return (
+                                                    <tr>
+                                                        <td colSpan="6" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
+                                                            You haven't posted any auctions yet.
+                                                            <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                                return null;
+                                            })()}
                                         </tbody>
                                     </table>
                                 </div>
 
                                 {(() => {
                                     const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
-                                    if (myAuctions.length <= itemsPerPage) return null;
+                                    const filteredMyAuctions = myAuctions.filter(a => {
+                                        const matchesSearch = !searchTerm || 
+                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                field?.toLowerCase().includes(searchTerm.toLowerCase())
+                                            );
+                                        const matchesCity = !filterCity || a.cityName === filterCity;
+                                        const matchesType = !filterType || a.propertyType === filterType;
+                                        return matchesSearch && matchesCity && matchesType;
+                                    });
+                                    if (filteredMyAuctions.length <= itemsPerPage) return null;
 
-                                    const totalPages = Math.ceil(myAuctions.length / itemsPerPage);
+                                    const totalPages = Math.ceil(filteredMyAuctions.length / itemsPerPage);
                                     const pages = [];
                                     const startPage = Math.max(1, currentPage - 2);
                                     const endPage = Math.min(totalPages, startPage + 4);
