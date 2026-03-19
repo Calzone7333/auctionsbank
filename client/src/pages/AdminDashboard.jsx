@@ -123,140 +123,139 @@ const AdminDashboard = () => {
         if (!autoFillText.trim()) return;
 
         const data = { ...formData };
+        const text = autoFillText;
 
-        // Helper to extract using regex
-        const extract = (regex) => {
-            // Regex optimization: use non-greedy match and look ahead for next potential field or newline
-            // This handles run-together text like ".Bank Name: ..."
-            const match = autoFillText.match(regex);
-            if (match) {
-                let val = match[1].trim();
-                // If the value ends with a period and looks like it's touching the next label, clean it
-                // e.g. "Name: Mr. X.Bank: ..." -> trim ".Bank"
-                val = val.split(/\.?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s*[:\-]/)[0].trim();
-                return val;
-            }
-            return null;
+        // Define mapping of fields to potential regex labels
+        const fieldMappings = {
+            bankName: /(?:Bank Name|Bank|Financial Institution|Branch)/i,
+            borrowerName: /(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client|Name of Borrower)/i,
+            propertyType: /(?:Property Type|Type|Category|Prop Type)/i,
+            description: /(?:Description|Desc|Details|Property Details|Short Description)/i,
+            location: /(?:Location|Address|Property Location|Property Address|Add|Prop Address|At)/i,
+            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land|Size)/i,
+            locality: /(?:Locality|Loc|Area Name|Neighborhood)/i,
+            cityName: /(?:City|Town|District|Place)/i,
+            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price)/i,
+            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit)/i,
+            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step)/i,
+            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail)/i,
+            possession: /(?:Possession|Possession Type|Status of Possession)/i,
+            emdLastDate: /(?:EMD Submission Date|EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date)/i,
+            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date)/i,
+            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date)/i,
+            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date)/i
         };
 
-        const parseDateTime = (fieldLabel) => {
-            // Support for multiple labels and various separators
-            // Added support for "By", "on", "before" etc.
-            const regex = new RegExp(`(?:${fieldLabel})\\s*[:\\-\\.\\s=]*\\s*(?:By|on|before|at|from)?\\s*(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})(?:\\s*(?:at|from|on|@|time|before)?\\s*(\\d{1,2}:\\d{2}(?:\\s*[APM]{2})?))?`, 'i');
-            const match = autoFillText.match(regex);
-            if (match) {
-                const [_, d, m, y, time] = match;
-                // Formatted for datetime-local (yyyy-MM-ddThh:mm)
-                let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-                if (time) {
-                    let t = time.trim().toUpperCase();
-                    let h, min;
-                    if (t.includes('AM') || t.includes('PM')) {
-                        let [timePart, modifier] = t.split(/\s*(?=[AP]M)/);
-                        [h, min] = timePart.split(':');
-                        h = parseInt(h, 10);
-                        if (modifier === 'PM' && h < 12) h += 12;
-                        if (modifier === 'AM' && h === 12) h = 0;
-                    } else {
-                        [h, min] = t.split(':');
-                    }
-                    dateStr += `T${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
-                } else {
-                    dateStr += `T00:00`;
+        // Find all label positions
+        const matches = [];
+        Object.entries(fieldMappings).forEach(([field, regex]) => {
+            const pattern = new RegExp(regex.source + "\\s*[:\\- ]*\\s*", 'gi');
+            let match;
+            while ((match = pattern.exec(text)) !== null) {
+                matches.push({
+                    field,
+                    index: match.index,
+                    length: match[0].length,
+                    label: match[0]
+                });
+            }
+        });
+
+        // Sort matches by position
+        matches.sort((a, b) => a.index - b.index);
+
+        // Extract values between labels
+        const extracted = {};
+        for (let i = 0; i < matches.length; i++) {
+            const current = matches[i];
+            const next = matches[i + 1];
+            
+            let start = current.index + current.length;
+            let end = next ? next.index : text.length;
+            
+            let value = text.substring(start, end).trim();
+            // Clean trailing separators like dots or commas that likely belong to the next label boundary
+            value = value.replace(/[.,\s]+$/, '');
+            
+            // If this field already has a value, append to it or keep longest (for contact/description)
+            if (extracted[current.field]) {
+                if (current.field === 'bankContactDetails' || current.field === 'description') {
+                    extracted[current.field] += ' | ' + value;
+                } else if (value.length > extracted[current.field].length) {
+                    extracted[current.field] = value;
                 }
-                return dateStr;
+            } else {
+                extracted[current.field] = value;
             }
-            return null;
-        };
+        }
 
-        // Bank & Borrower
-        const bank = extract(/(?:Bank Name|Bank|Financial Institution)\s*[:\-]?\s*(.*)/i);
-        if (bank) data.bankName = bank;
+        // --- Post-processing and data assignment ---
+        
+        if (extracted.bankName) data.bankName = extracted.bankName;
+        if (extracted.borrowerName) data.borrowerName = extracted.borrowerName;
+        if (extracted.description) data.description = extracted.description;
+        if (extracted.location) data.location = extracted.location;
+        if (extracted.area) data.area = extracted.area;
+        if (extracted.locality) data.locality = extracted.locality;
+        if (extracted.cityName) data.cityName = extracted.cityName;
+        if (extracted.possession) data.possession = extracted.possession;
+        if (extracted.bankContactDetails) data.bankContactDetails = extracted.bankContactDetails;
 
-        const borrower = extract(/(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client)\s*[:\-]?\s*(.*)/i);
-        if (borrower) data.borrowerName = borrower;
-
-        // Property Type Mapping
-        const type = extract(/(?:Property Type|Type|Category)\s*[:\-]?\s*(.*)/i);
-        if (type) {
-            const tl = type.toLowerCase();
+        // Process Property Type
+        if (extracted.propertyType) {
+            const tl = extracted.propertyType.toLowerCase();
             if (tl.includes('flat') || tl.includes('floor') || tl.includes('apartment')) data.propertyType = 'Flat and Floor';
-            else if (tl.includes('residential') || tl.includes('house') || tl.includes('villa') || tl.includes('bungalow')) data.propertyType = 'House and Residential Plot';
+            else if (tl.includes('residential') || tl.includes('house') || tl.includes('villa')) data.propertyType = 'House and Residential Plot';
             else if (tl.includes('land') || tl.includes('plot') || tl.includes('site')) data.propertyType = 'Land, Plot and Site';
-            else if (tl.includes('commercial') || tl.includes('business')) data.propertyType = 'All Commercial';
+            else if (tl.includes('commercial')) data.propertyType = 'All Commercial';
             else if (tl.includes('office')) data.propertyType = 'Office';
-            else if (tl.includes('shop') || tl.includes('showroom')) data.propertyType = 'Shop';
-            else if (tl.includes('industrial') || tl.includes('shed') || tl.includes('godown')) data.propertyType = 'Industrial Plots, Land & Sheds';
+            else if (tl.includes('shop')) data.propertyType = 'Shop';
+            else if (tl.includes('industrial') || tl.includes('shed')) data.propertyType = 'Industrial Plots, Land & Sheds';
             else if (tl.includes('factory') || tl.includes('mill')) data.propertyType = 'Factory Land & buildings';
             else if (tl.includes('car') || tl.includes('vehicle')) data.propertyType = 'Car';
-            else if (tl.includes('plant') || tl.includes('machinery') || tl.includes('equip')) data.propertyType = 'Plant and Machinery';
+            else if (tl.includes('plant') || tl.includes('machinery')) data.propertyType = 'Plant and Machinery';
         }
 
-        // Description
-        const desc = extract(/(?:Description|Desc|Details|Property Details)\s*[:\-]?\s*(.*)/i);
-        if (desc) data.description = desc;
+        // Process Financials (numbers)
+        const parseNum = (val) => val ? val.replace(/[^\d.]/g, '') : null;
+        if (extracted.reservePrice) data.reservePrice = parseNum(extracted.reservePrice);
+        if (extracted.emdAmount) data.emdAmount = parseNum(extracted.emdAmount);
+        if (extracted.bidIncrement) data.bidIncrement = parseNum(extracted.bidIncrement);
 
-        // Location & City
-        const loc = extract(/(?:Location|Address|Property Location|Property Address|Add|Prop Address)\s*[:\-]?\s*(.*)/i);
-        if (loc) {
-            data.location = loc;
-            // Extract city from location if city not explicitly provided
-            const parts = loc.split(',');
-            if (parts.length > 1) {
-                const cityPart = parts[parts.length - 1].split('-')[0].trim();
-                data.cityName = cityPart;
+        // Process Dates
+        const parseDate = (val) => {
+            if (!val) return null;
+            const dateMatch = val.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
+            if (!dateMatch) return null;
+            const [_, d, m, y] = dateMatch;
+            let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            const timeMatch = val.match(/(\d{1,2}:\d{2}(?:\s*[APM]{2})?)/i);
+            if (timeMatch) {
+                let t = timeMatch[1].toUpperCase();
+                let h, min;
+                if (t.includes('AM') || t.includes('PM')) {
+                    let [timePart, modifier] = t.split(/\s*(?=[AP]M)/);
+                    [h, min] = timePart.split(':');
+                    h = parseInt(h, 10);
+                    if (modifier === 'PM' && h < 12) h += 12;
+                    if (modifier === 'AM' && h === 12) h = 0;
+                } else {
+                    [h, min] = t.split(':');
+                }
+                dateStr += `T${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
+            } else {
+                dateStr += `T00:00`;
             }
-        }
+            return dateStr;
+        };
 
-        // Area
-        const area = extract(/(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land)\s*[:\-]?\s*(.*)/i);
-        if (area) data.area = area;
-
-        // Locality
-        const locality = extract(/(?:Locality|Loc|Area Name)\s*[:\-]?\s*(.*)/i);
-        if (locality) data.locality = locality;
-
-        // City (Explicit)
-        const city = extract(/(?:City|Town|District)\s*[:\-]?\s*(.*)/i);
-        if (city) data.cityName = city;
-
-        // Financials - support various delimiters and currencies
-        const rp = extract(/(?:Reserve Price|Price|RP|Start Price|Min Price)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
-        if (rp) data.reservePrice = rp.replace(/,/g, '');
-
-        const emdVal = extract(/(?:EMD Amount|EMD|Earnest Money)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
-        if (emdVal) data.emdAmount = emdVal.replace(/,/g, '');
-
-        const bi = extract(/(?:Bid Increment|Increment|Bid Multiplier)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
-        if (bi) data.bidIncrement = bi.replace(/,/g, '');
-
-        // Bank Contact
-        const contact = extract(/(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer)\s*[:\-]?\s*(.*)/i);
-        const phone = extract(/(?:Phone|Mobile|Contact No|Cell|Tel|Ph)\s*[:\-]?\s*(.*)/i);
-        const email = extract(/(?:Bank Email|Email|Mail)\s*[:\-]?\s*(.*)/i);
-        if (contact || email || phone) {
-            let details = contact || '';
-            if (phone && !details.includes(phone)) {
-                details += ` | Ph: ${phone}`;
-            }
-            if (email && !details.includes(email)) {
-                details += ` | Email: ${email}`;
-            }
-            data.bankContactDetails = details.trim().replace(/^\|\s*/, '');
-        }
-
-        // Dates - improved extraction
-        const emdDate = parseDateTime('EMD Submission Date|EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date');
-        if (emdDate) data.emdLastDate = emdDate;
-
-        const auctionStart = parseDateTime('Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start');
-        if (auctionStart) data.auctionDate = auctionStart;
-
-        const auctionEnd = parseDateTime('Auction End Date & Time|Auction End Date|Auction End');
-        if (auctionEnd) data.auctionEndDate = auctionEnd;
+        if (extracted.emdLastDate) data.emdLastDate = parseDate(extracted.emdLastDate);
+        if (extracted.auctionDate) data.auctionDate = parseDate(extracted.auctionDate);
+        if (extracted.auctionEndDate) data.auctionEndDate = parseDate(extracted.auctionEndDate);
+        if (extracted.inspectionDate) data.inspectionDate = parseDate(extracted.inspectionDate);
 
         setFormData(data);
-        setAutoFillText(''); // Clear magic fill source
+        setAutoFillText('');
         alert('Magic Auto-Fill completed! Please review the fields.');
     };
 
