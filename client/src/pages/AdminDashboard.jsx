@@ -1846,13 +1846,7 @@ const AdminDashboard = () => {
                                                 onChange={(e) => setFilterCity(e.target.value)}
                                             >
                                                 <option value="">All Cities</option>
-                                                {[...new Set(allAuctions.filter(a => {
-                                                    const isAdmin = allUsers.some(u => 
-                                                        u.email?.trim().toLowerCase() === a.createdByEmail?.trim().toLowerCase() 
-                                                        && u.role === 'ADMIN'
-                                                    );
-                                                    return a.createdByEmail?.trim().toLowerCase() === user?.email?.trim().toLowerCase() || isAdmin;
-                                                }).map(a => a.cityName).filter(Boolean))].sort().map(city => (
+                                                {[...new Set(allAuctions.map(a => a.cityName).filter(Boolean))].sort().map(city => (
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
@@ -1862,13 +1856,7 @@ const AdminDashboard = () => {
                                                 onChange={(e) => setFilterType(e.target.value)}
                                             >
                                                 <option value="">All Types</option>
-                                                {[...new Set(allAuctions.filter(a => {
-                                                    const isAdmin = allUsers.some(u => 
-                                                        u.email?.trim().toLowerCase() === a.createdByEmail?.trim().toLowerCase() 
-                                                        && u.role === 'ADMIN'
-                                                    );
-                                                    return a.createdByEmail?.trim().toLowerCase() === user?.email?.trim().toLowerCase() || isAdmin;
-                                                }).map(a => a.propertyType).filter(Boolean))].sort().map(type => (
+                                                {[...new Set(allAuctions.map(a => a.propertyType).filter(Boolean))].sort().map(type => (
                                                     <option key={type} value={type}>{type}</option>
                                                 ))}
                                             </select>
@@ -1887,22 +1875,8 @@ const AdminDashboard = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
-                                                const myAuctions = allAuctions.filter(a => {
-                                                    const creatorEmail = a.createdByEmail?.trim().toLowerCase();
-                                                    const currentUserEmail = user?.email?.trim().toLowerCase();
-                                                    
-                                                    // Current user's own auctions
-                                                    if (creatorEmail === currentUserEmail) return true;
-                                                    // Superadmin override
-                                                    if (currentUserEmail === 'madrasauction@gmail.com') return true;
-                                                    
-                                                    // Check if it was created by ANY other admin from our user list
-                                                    const isOtherAdminPost = allUsers.some(u => 
-                                                        u.email?.trim().toLowerCase() === creatorEmail 
-                                                        && u.role === 'ADMIN'
-                                                    );
-                                                    return isOtherAdminPost;
-                                                });
+                                                // Show ALL auctions in the management tab for admins
+                                                const myAuctions = allAuctions;
                                                 const filteredMyAuctions = myAuctions.filter(a => {
                                                     const matchesSearch = !searchTerm || 
                                                         [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
