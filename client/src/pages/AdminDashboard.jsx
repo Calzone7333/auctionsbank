@@ -125,33 +125,54 @@ const AdminDashboard = () => {
         const data = { ...formData };
         const text = autoFillText;
 
-        // Define mapping of fields to potential regex labels
+        // More restrictive mappings: require a separator (:, -, =) or a following newline
+        // This prevents capturing random words inside sentences as labels.
         const fieldMappings = {
-            bankName: /(?:Bank Name|Bank|Financial Institution|Branch)/i,
-            borrowerName: /(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client|Name of Borrower)/i,
-            propertyType: /(?:Property Type|Type|Category|Prop Type)/i,
-            description: /(?:Description|Desc|Details|Property Details|Short Description)/i,
-            location: /(?:Location|Address|Property Location|Property Address|Add|Prop Address|At)/i,
-            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land|Size)/i,
-            locality: /(?:Locality|Loc|Area Name|Neighborhood)/i,
-            cityName: /(?:City|Town|District|Place)/i,
-            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price)/i,
-            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit)/i,
-            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step)/i,
-            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail)/i,
-            possession: /(?:Possession|Possession Type|Status of Possession)/i,
-            emdLastDate: /(?:EMD Submission Date|EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date)/i,
-            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date)/i,
-            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date)/i,
-            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date)/i
+            bankName: /(?:Bank Name|Bank|Financial Institution|Branch|Bank Branch)[:\-\.=]/i,
+            borrowerName: /(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client|Name of Borrower)[:\-\.=]/i,
+            propertyType: /(?:Property Type|Type|Category|Prop Type)[:\-\.=]/i,
+            description: /(?:Description|Desc|Details|Property Details|Short Description)[:\-\.=]/i,
+            location: /(?:Location|Address|Property Location|Property Address|Prop Address)[:\-\.=]/i,
+            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land|Size)[:\-\.=]/i,
+            locality: /(?:Locality|Loc|Area Name|Neighborhood|Situated at)[:\-\.=]/i,
+            cityName: /(?:City|Town|District|Place)[:\-\.=]/i,
+            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price)[:\-\.=]/i,
+            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit)[:\-\.=]/i,
+            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step)[:\-\.=]/i,
+            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail)[:\-\.=]/i,
+            possession: /(?:Possession|Possession Type|Status of Possession)[:\-\.=]/i,
+            emdLastDate: /(?:EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date)[:\-\.=]/i,
+            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date)[:\-\.=]/i,
+            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date)[:\-\.=]/i,
+            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date)[:\-\.=]/i
         };
 
         // Find all label positions
         const matches = [];
         Object.entries(fieldMappings).forEach(([field, regex]) => {
-            const pattern = new RegExp(regex.source + "\\s*[:\\- ]*\\s*", 'gi');
+            const pattern = new RegExp(regex.source + "\\s*", 'gi');
             let match;
             while ((match = pattern.exec(text)) !== null) {
+                matches.push({
+                    field,
+                    index: match.index,
+                    length: match[0].length,
+                    label: match[0]
+                });
+            }
+        });
+
+        // Special fallback for fields without separators (at start of lines)
+        // e.g., "City Chittoor" (sometimes copiers miss the colon)
+        const fallbackLabels = [
+            { field: 'cityName', regex: /^City\s+/im },
+            { field: 'reservePrice', regex: /^Reserve Price\s+/im },
+            { field: 'emdAmount', regex: /^EMD Amount\s+/im }
+        ];
+
+        fallbackLabels.forEach(({ field, regex }) => {
+            const match = text.match(regex);
+            if (match && !matches.some(m => m.field === field)) {
                 matches.push({
                     field,
                     index: match.index,
@@ -164,7 +185,6 @@ const AdminDashboard = () => {
         // Sort matches by position
         matches.sort((a, b) => a.index - b.index);
 
-        // Extract values between labels
         const extracted = {};
         for (let i = 0; i < matches.length; i++) {
             const current = matches[i];
@@ -174,22 +194,31 @@ const AdminDashboard = () => {
             let end = next ? next.index : text.length;
             
             let value = text.substring(start, end).trim();
-            // Clean trailing separators like dots or commas that likely belong to the next label boundary
-            value = value.replace(/[.,\s]+$/, '');
             
-            // If this field already has a value, append to it or keep longest (for contact/description)
+            // Clean value: Stop before common new line patterns or start of other text blocks
+            // This prevents "Bank Name: State Bank of India Description: ..." where Description is a missing label
+            const lines = value.split('\n');
+            if (lines.length > 1) {
+                // If it's more than 3 lines, it's likely bleeding into next section
+                if (current.field !== 'description' && current.field !== 'location') {
+                    value = lines[0].trim();
+                }
+            }
+
+            // Remove trailing chars that look like field boundaries
+            value = value.replace(/[\[\]{}()\*\|]+$/, '').split(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s*[:\-]/)[0];
+            value = value.trim().replace(/[.,\s]+$/, '');
+            
             if (extracted[current.field]) {
-                if (current.field === 'bankContactDetails' || current.field === 'description') {
+                if (['bankContactDetails', 'description', 'location'].includes(current.field)) {
                     extracted[current.field] += ' | ' + value;
-                } else if (value.length > extracted[current.field].length) {
-                    extracted[current.field] = value;
                 }
             } else {
                 extracted[current.field] = value;
             }
         }
 
-        // --- Post-processing and data assignment ---
+        // --- Post-processing ---
         
         if (extracted.bankName) data.bankName = extracted.bankName;
         if (extracted.borrowerName) data.borrowerName = extracted.borrowerName;
@@ -197,54 +226,50 @@ const AdminDashboard = () => {
         if (extracted.location) data.location = extracted.location;
         if (extracted.area) data.area = extracted.area;
         if (extracted.locality) data.locality = extracted.locality;
-        if (extracted.cityName) data.cityName = extracted.cityName;
         if (extracted.possession) data.possession = extracted.possession;
-        if (extracted.bankContactDetails) data.bankContactDetails = extracted.bankContactDetails;
-
-        // Process Property Type
-        if (extracted.propertyType) {
-            const tl = extracted.propertyType.toLowerCase();
-            if (tl.includes('flat') || tl.includes('floor') || tl.includes('apartment')) data.propertyType = 'Flat and Floor';
-            else if (tl.includes('residential') || tl.includes('house') || tl.includes('villa')) data.propertyType = 'House and Residential Plot';
-            else if (tl.includes('land') || tl.includes('plot') || tl.includes('site')) data.propertyType = 'Land, Plot and Site';
-            else if (tl.includes('commercial')) data.propertyType = 'All Commercial';
-            else if (tl.includes('office')) data.propertyType = 'Office';
-            else if (tl.includes('shop')) data.propertyType = 'Shop';
-            else if (tl.includes('industrial') || tl.includes('shed')) data.propertyType = 'Industrial Plots, Land & Sheds';
-            else if (tl.includes('factory') || tl.includes('mill')) data.propertyType = 'Factory Land & buildings';
-            else if (tl.includes('car') || tl.includes('vehicle')) data.propertyType = 'Car';
-            else if (tl.includes('plant') || tl.includes('machinery')) data.propertyType = 'Plant and Machinery';
+        
+        // City Name cleanup - prevents long fragments
+        if (extracted.cityName) {
+            let c = extracted.cityName.split(',').pop().trim();
+            if (c.length > 30) c = c.split(' ').pop(); // Take last word if it's long
+            data.cityName = c;
         }
 
-        // Process Financials (numbers)
-        const parseNum = (val) => val ? val.replace(/[^\d.]/g, '') : null;
+        // Financials (numbers)
+        const parseNum = (val) => {
+            if (!val) return '';
+            // Match first currency-like number
+            const numMatch = val.replace(/,/g, '').match(/(\d+\.?\d*)/);
+            return numMatch ? numMatch[1] : '';
+        };
+        
         if (extracted.reservePrice) data.reservePrice = parseNum(extracted.reservePrice);
         if (extracted.emdAmount) data.emdAmount = parseNum(extracted.emdAmount);
         if (extracted.bidIncrement) data.bidIncrement = parseNum(extracted.bidIncrement);
 
-        // Process Dates
+        // Dates
         const parseDate = (val) => {
             if (!val) return null;
+            // Match DD[./-]MM[./-]YYYY
             const dateMatch = val.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
             if (!dateMatch) return null;
+            
             const [_, d, m, y] = dateMatch;
             let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            const timeMatch = val.match(/(\d{1,2}:\d{2}(?:\s*[APM]{2})?)/i);
+            
+            // Search for time (HH:MM)
+            const timeMatch = val.match(/(\d{1,2})[:.](\d{2})(?:\s*:?\d{2})?(?:\s*([APM]{2}))?/i);
             if (timeMatch) {
-                let t = timeMatch[1].toUpperCase();
-                let h, min;
-                if (t.includes('AM') || t.includes('PM')) {
-                    let [timePart, modifier] = t.split(/\s*(?=[AP]M)/);
-                    [h, min] = timePart.split(':');
-                    h = parseInt(h, 10);
-                    if (modifier === 'PM' && h < 12) h += 12;
-                    if (modifier === 'AM' && h === 12) h = 0;
-                } else {
-                    [h, min] = t.split(':');
-                }
+                let h = parseInt(timeMatch[1], 10);
+                const min = timeMatch[2];
+                const modifier = timeMatch[3]?.toUpperCase();
+                
+                if (modifier === 'PM' && h < 12) h += 12;
+                if (modifier === 'AM' && h === 12) h = 0;
+                
                 dateStr += `T${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
             } else {
-                dateStr += `T00:00`;
+                dateStr += `T10:00`; // Default time
             }
             return dateStr;
         };
@@ -253,6 +278,11 @@ const AdminDashboard = () => {
         if (extracted.auctionDate) data.auctionDate = parseDate(extracted.auctionDate);
         if (extracted.auctionEndDate) data.auctionEndDate = parseDate(extracted.auctionEndDate);
         if (extracted.inspectionDate) data.inspectionDate = parseDate(extracted.inspectionDate);
+
+        // Concatenate contact info
+        if (extracted.bankContactDetails) {
+            data.bankContactDetails = extracted.bankContactDetails.replace(/\|/g, '').trim();
+        }
 
         setFormData(data);
         setAutoFillText('');
