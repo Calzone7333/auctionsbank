@@ -1824,7 +1824,7 @@ const AdminDashboard = () => {
                             <div className="space-y-4">
                                 <div>
                                     <h2 className="text-2xl font-display font-black uppercase tracking-tight text-brand-dark">Admin Auctions</h2>
-                                    <p className="text-sm text-slate-500 mt-1">Properties posted by you. You have full edit access to these.</p>
+                                    <p className="text-sm text-slate-500 mt-1">Manage all platform listings. You have full edit access to every auction.</p>
                                 </div>
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     {/* Search & Filter Bar */}
@@ -1976,7 +1976,7 @@ const AdminDashboard = () => {
                                                     ));
                                             })()}
                                             {(() => {
-                                                const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                                const myAuctions = allAuctions;
                                                 const filteredMyAuctions = myAuctions.filter(a => {
                                                     const matchesSearch = !searchTerm || 
                                                         [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
@@ -1996,7 +1996,7 @@ const AdminDashboard = () => {
                                                 if (myAuctions.length === 0) return (
                                                     <tr>
                                                         <td colSpan="6" className="px-6 py-12 text-center text-slate-500 font-medium text-sm">
-                                                            You haven't posted any auctions yet.
+                                                            No auctions found in the database.
                                                             <button onClick={() => setActiveTab('post-auction')} className="text-brand-blue font-bold ml-2 hover:underline">Post one now</button>
                                                         </td>
                                                     </tr>
@@ -2008,7 +2008,7 @@ const AdminDashboard = () => {
                                 </div>
 
                                 {(() => {
-                                    const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                    const myAuctions = allAuctions;
                                     const filteredMyAuctions = myAuctions.filter(a => {
                                         const matchesSearch = !searchTerm || 
                                             [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
