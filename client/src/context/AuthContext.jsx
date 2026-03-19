@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const idleTimerRef = useRef(null);
-    const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
     const logout = useCallback(() => {
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -81,8 +81,9 @@ export const AuthProvider = ({ children }) => {
 
         const data = await response.json();
         if (data.token) {
-            // Using sessionStorage to ensure logout when browser/tab is closed
+            // Using BOTH to ensure persistent session
             sessionStorage.setItem('user', JSON.stringify(data));
+            localStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return { success: true };
         }
@@ -119,6 +120,7 @@ export const AuthProvider = ({ children }) => {
                 const updatedUser = await response.json();
                 const newUser = { ...user, ...updatedUser };
                 sessionStorage.setItem('user', JSON.stringify(newUser));
+                localStorage.setItem('user', JSON.stringify(newUser));
                 setUser(newUser);
             } else if (response.status === 401) {
                 logout();
@@ -143,6 +145,7 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.token) {
             sessionStorage.setItem('user', JSON.stringify(data));
+            localStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return data;
         }

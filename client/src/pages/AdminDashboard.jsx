@@ -131,23 +131,27 @@ const AdminDashboard = () => {
         };
 
         const parseDateTime = (fieldLabel) => {
-            // Robust regex to capture Date and optional Time specifically after a label
-            // Handles formats like "Label: 12.03.2026 11:00 AM" or "Label: 12/03/2026 at 11:00 AM"
-            const regex = new RegExp(`${fieldLabel}:?\\s*(\\d{2})[./-](\\d{2})[./-](\\d{4})(?:\\s*(?:at|from|on|@)?\\s*(\\d{1,2}:\\d{2}\\s*[APM]{2}))?`, 'i');
+            // Support for multiple labels (passed as 'Label1|Label2') and various separators
+            const regex = new RegExp(`(?:${fieldLabel})\\s*[:\\-\\.\\s=]*\\s*(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})(?:\\s*(?:at|from|on|@|time)?\\s*(\\d{1,2}:\\d{2}(?:\\s*[APM]{2})?))?`, 'i');
             const match = autoFillText.match(regex);
             if (match) {
                 const [_, d, m, y, time] = match;
+                // Formatted for datetime-local (yyyy-MM-ddThh:mm)
                 let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                 if (time) {
-                    let t = time.trim();
-                    let [timePart, modifier] = t.split(/\s+/);
-                    let [hours, minutes] = timePart.split(':');
-                    let h = parseInt(hours, 10);
-                    if (modifier && modifier.toUpperCase() === 'PM' && h < 12) h += 12;
-                    if (modifier && modifier.toUpperCase() === 'AM' && h === 12) h = 0;
-                    dateStr += `T${h.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+                    let t = time.trim().toUpperCase();
+                    let h, min;
+                    if (t.includes('AM') || t.includes('PM')) {
+                        let [timePart, modifier] = t.split(/\s*(?=[AP]M)/);
+                        [h, min] = timePart.split(':');
+                        h = parseInt(h, 10);
+                        if (modifier === 'PM' && h < 12) h += 12;
+                        if (modifier === 'AM' && h === 12) h = 0;
+                    } else {
+                        [h, min] = t.split(':');
+                    }
+                    dateStr += `T${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
                 } else {
-                    // No time found, default to start of day for valid datetime-local format
                     dateStr += `T00:00`;
                 }
                 return dateStr;
@@ -156,34 +160,34 @@ const AdminDashboard = () => {
         };
 
         // Bank & Borrower
-        const bank = extract(/(?:Bank Name|Bank):\s*(.*)/i);
+        const bank = extract(/(?:Bank Name|Bank|Financial Institution)\s*[:\-]?\s*(.*)/i);
         if (bank) data.bankName = bank;
 
-        const borrower = extract(/(?:Borrower Name|Borrower):\s*(.*)/i);
+        const borrower = extract(/(?:Borrower Name|Borrowers|Borrower|Client)\s*[:\-]?\s*(.*)/i);
         if (borrower) data.borrowerName = borrower;
 
         // Property Type Mapping
-        const type = extract(/(?:Property Type|Type):\s*(.*)/i);
+        const type = extract(/(?:Property Type|Type|Category)\s*[:\-]?\s*(.*)/i);
         if (type) {
             const tl = type.toLowerCase();
-            if (tl.includes('flat') || tl.includes('floor')) data.propertyType = 'Flat and Floor';
-            else if (tl.includes('residential') || tl.includes('house')) data.propertyType = 'House and Residential Plot';
+            if (tl.includes('flat') || tl.includes('floor') || tl.includes('apartment')) data.propertyType = 'Flat and Floor';
+            else if (tl.includes('residential') || tl.includes('house') || tl.includes('villa') || tl.includes('bungalow')) data.propertyType = 'House and Residential Plot';
             else if (tl.includes('land') || tl.includes('plot') || tl.includes('site')) data.propertyType = 'Land, Plot and Site';
-            else if (tl.includes('commercial')) data.propertyType = 'All Commercial';
+            else if (tl.includes('commercial') || tl.includes('business')) data.propertyType = 'All Commercial';
             else if (tl.includes('office')) data.propertyType = 'Office';
-            else if (tl.includes('shop')) data.propertyType = 'Shop';
-            else if (tl.includes('industrial') || tl.includes('shed')) data.propertyType = 'Industrial Plots, Land & Sheds';
-            else if (tl.includes('factory')) data.propertyType = 'Factory Land & buildings';
-            else if (tl.includes('car')) data.propertyType = 'Car';
-            else if (tl.includes('plant') || tl.includes('machinery')) data.propertyType = 'Plant and Machinery';
+            else if (tl.includes('shop') || tl.includes('showroom')) data.propertyType = 'Shop';
+            else if (tl.includes('industrial') || tl.includes('shed') || tl.includes('godown')) data.propertyType = 'Industrial Plots, Land & Sheds';
+            else if (tl.includes('factory') || tl.includes('mill')) data.propertyType = 'Factory Land & buildings';
+            else if (tl.includes('car') || tl.includes('vehicle')) data.propertyType = 'Car';
+            else if (tl.includes('plant') || tl.includes('machinery') || tl.includes('equip')) data.propertyType = 'Plant and Machinery';
         }
 
         // Description
-        const desc = extract(/(?:Description|Desc|Details):\s*(.*)/i);
+        const desc = extract(/(?:Description|Desc|Details|Property Details)\s*[:\-]?\s*(.*)/i);
         if (desc) data.description = desc;
 
         // Location & City
-        const loc = extract(/(?:Location|Address|Property Location|Property Address|Add):\s*(.*)/i);
+        const loc = extract(/(?:Location|Address|Property Location|Property Address|Add|Prop Address)\s*[:\-]?\s*(.*)/i);
         if (loc) {
             data.location = loc;
             // Extract city from location if city not explicitly provided
@@ -195,40 +199,40 @@ const AdminDashboard = () => {
         }
 
         // Area
-        const area = extract(/(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension):\s*(.*)/i);
+        const area = extract(/(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land)\s*[:\-]?\s*(.*)/i);
         if (area) data.area = area;
 
         // Locality
-        const locality = extract(/(?:Locality|Loc):\s*(.*)/i);
+        const locality = extract(/(?:Locality|Loc|Area Name)\s*[:\-]?\s*(.*)/i);
         if (locality) data.locality = locality;
 
         // City (Explicit)
-        const city = extract(/City:\s*(.*)/i);
+        const city = extract(/(?:City|Town|District)\s*[:\-]?\s*(.*)/i);
         if (city) data.cityName = city;
 
-        // Financials
-        const rp = extract(/(?:Reserve Price|Price|RP):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
+        // Financials - support various delimiters and currencies
+        const rp = extract(/(?:Reserve Price|Price|RP|Start Price|Min Price)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
         if (rp) data.reservePrice = rp.replace(/,/g, '');
 
-        const emdVal = extract(/(?:EMD Amount|EMD):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
+        const emdVal = extract(/(?:EMD Amount|EMD|Earnest Money)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
         if (emdVal) data.emdAmount = emdVal.replace(/,/g, '');
 
-        const bi = extract(/(?:Bid Increment|Increment):\s*(?:Rs\.|₹)?\s*([\d,.]+)/i);
+        const bi = extract(/(?:Bid Increment|Increment|Bid Multiplier)\s*[:\-]?\s*(?:Rs\.|₹|INR|Rupees)?\s*([\d,.]+)/i);
         if (bi) data.bidIncrement = bi.replace(/,/g, '');
 
         // Bank Contact
-        const contact = extract(/(?:Bank Contact Details|Contact|Officer|Person):\s*(.*)/i);
-        const phone = extract(/(?:Phone|Mobile|Contact No):\s*(.*)/i);
-        const email = extract(/(?:Bank Email|Email):\s*(.*)/i);
+        const contact = extract(/(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer)\s*[:\-]?\s*(.*)/i);
+        const phone = extract(/(?:Phone|Mobile|Contact No|Cell|Tel|Ph)\s*[:\-]?\s*(.*)/i);
+        const email = extract(/(?:Bank Email|Email|Mail)\s*[:\-]?\s*(.*)/i);
         if (contact || email || phone) {
             data.bankContactDetails = `${contact || ''} ${phone ? `| Ph: ${phone}` : ''} ${email ? `| Email: ${email}` : ''}`.trim();
         }
 
         // Dates - improved extraction
-        const emdDate = parseDateTime('EMD Submission Date') || parseDateTime('EMD Last Date');
+        const emdDate = parseDateTime('EMD Submission Date') || parseDateTime('EMD Last Date') || parseDateTime('Last Date of EMD');
         if (emdDate) data.emdLastDate = emdDate;
 
-        const auctionStart = parseDateTime('Auction Start Date & Time') || parseDateTime('Auction Date & Time') || parseDateTime('Auction Date');
+        const auctionStart = parseDateTime('Auction Start Date & Time') || parseDateTime('Auction Date & Time') || parseDateTime('Auction Date') || parseDateTime('Date of Auction');
         if (auctionStart) data.auctionDate = auctionStart;
 
         const auctionEnd = parseDateTime('Auction End Date & Time') || parseDateTime('Auction End Date');
@@ -1420,7 +1424,6 @@ const AdminDashboard = () => {
                                                         )}
                                                         <input
                                                             type="file"
-                                                            accept="image/*"
                                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                                             onChange={handleImageChange}
                                                         />
@@ -1441,7 +1444,6 @@ const AdminDashboard = () => {
                                                 <div className="p-4 bg-white rounded-lg border border-slate-200 border-dashed">
                                                     <input
                                                         type="file"
-                                                        accept="image/*,application/pdf"
                                                         className="w-full text-[11px] font-medium text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer"
                                                         onChange={(e) => setSelectedFile(e.target.files[0])}
                                                     />
@@ -1827,7 +1829,10 @@ const AdminDashboard = () => {
                                                 onChange={(e) => setFilterCity(e.target.value)}
                                             >
                                                 <option value="">All Cities</option>
-                                                {[...new Set(allAuctions.filter(a => a.createdByEmail === user?.email).map(a => a.cityName).filter(Boolean))].sort().map(city => (
+                                                {[...new Set(allAuctions.filter(a => {
+                                                    const isAdmin = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
+                                                    return a.createdByEmail === user?.email || isAdmin;
+                                                }).map(a => a.cityName).filter(Boolean))].sort().map(city => (
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
@@ -1837,7 +1842,10 @@ const AdminDashboard = () => {
                                                 onChange={(e) => setFilterType(e.target.value)}
                                             >
                                                 <option value="">All Types</option>
-                                                {[...new Set(allAuctions.filter(a => a.createdByEmail === user?.email).map(a => a.propertyType).filter(Boolean))].sort().map(type => (
+                                                {[...new Set(allAuctions.filter(a => {
+                                                    const isAdmin = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
+                                                    return a.createdByEmail === user?.email || isAdmin;
+                                                }).map(a => a.propertyType).filter(Boolean))].sort().map(type => (
                                                     <option key={type} value={type}>{type}</option>
                                                 ))}
                                             </select>
@@ -1856,7 +1864,15 @@ const AdminDashboard = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
-                                                const myAuctions = allAuctions.filter(a => a.createdByEmail === user?.email);
+                                                const myAuctions = allAuctions.filter(a => {
+                                                    // Current user's own auctions
+                                                    if (a.createdByEmail === user?.email) return true;
+                                                    // Superadmin override
+                                                    if (user?.email === 'madrasauction@gmail.com') return true;
+                                                    // Auctions created by ANY admin (so all admins can manage admin-posted content)
+                                                    const isOtherAdminPost = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
+                                                    return isOtherAdminPost;
+                                                });
                                                 const filteredMyAuctions = myAuctions.filter(a => {
                                                     const matchesSearch = !searchTerm || 
                                                         [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
