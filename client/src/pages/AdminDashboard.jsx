@@ -225,7 +225,14 @@ const AdminDashboard = () => {
         const phone = extract(/(?:Phone|Mobile|Contact No|Cell|Tel|Ph)\s*[:\-]?\s*(.*)/i);
         const email = extract(/(?:Bank Email|Email|Mail)\s*[:\-]?\s*(.*)/i);
         if (contact || email || phone) {
-            data.bankContactDetails = `${contact || ''} ${phone ? `| Ph: ${phone}` : ''} ${email ? `| Email: ${email}` : ''}`.trim();
+            let details = contact || '';
+            if (phone && !details.includes(phone)) {
+                details += ` | Ph: ${phone}`;
+            }
+            if (email && !details.includes(email)) {
+                details += ` | Email: ${email}`;
+            }
+            data.bankContactDetails = details.trim().replace(/^\|\s*/, '');
         }
 
         // Dates - improved extraction
