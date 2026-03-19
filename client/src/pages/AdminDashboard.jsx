@@ -126,13 +126,23 @@ const AdminDashboard = () => {
 
         // Helper to extract using regex
         const extract = (regex) => {
+            // Regex optimization: use non-greedy match and look ahead for next potential field or newline
+            // This handles run-together text like ".Bank Name: ..."
             const match = autoFillText.match(regex);
-            return match ? match[1].trim() : null;
+            if (match) {
+                let val = match[1].trim();
+                // If the value ends with a period and looks like it's touching the next label, clean it
+                // e.g. "Name: Mr. X.Bank: ..." -> trim ".Bank"
+                val = val.split(/\.?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s*[:\-]/)[0].trim();
+                return val;
+            }
+            return null;
         };
 
         const parseDateTime = (fieldLabel) => {
-            // Support for multiple labels (passed as 'Label1|Label2') and various separators
-            const regex = new RegExp(`(?:${fieldLabel})\\s*[:\\-\\.\\s=]*\\s*(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})(?:\\s*(?:at|from|on|@|time)?\\s*(\\d{1,2}:\\d{2}(?:\\s*[APM]{2})?))?`, 'i');
+            // Support for multiple labels and various separators
+            // Added support for "By", "on", "before" etc.
+            const regex = new RegExp(`(?:${fieldLabel})\\s*[:\\-\\.\\s=]*\\s*(?:By|on|before|at|from)?\\s*(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})(?:\\s*(?:at|from|on|@|time|before)?\\s*(\\d{1,2}:\\d{2}(?:\\s*[APM]{2})?))?`, 'i');
             const match = autoFillText.match(regex);
             if (match) {
                 const [_, d, m, y, time] = match;
@@ -163,7 +173,7 @@ const AdminDashboard = () => {
         const bank = extract(/(?:Bank Name|Bank|Financial Institution)\s*[:\-]?\s*(.*)/i);
         if (bank) data.bankName = bank;
 
-        const borrower = extract(/(?:Borrower Name|Borrowers|Borrower|Client)\s*[:\-]?\s*(.*)/i);
+        const borrower = extract(/(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client)\s*[:\-]?\s*(.*)/i);
         if (borrower) data.borrowerName = borrower;
 
         // Property Type Mapping
@@ -236,13 +246,13 @@ const AdminDashboard = () => {
         }
 
         // Dates - improved extraction
-        const emdDate = parseDateTime('EMD Submission Date') || parseDateTime('EMD Last Date') || parseDateTime('Last Date of EMD');
+        const emdDate = parseDateTime('EMD Submission Date|EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date');
         if (emdDate) data.emdLastDate = emdDate;
 
-        const auctionStart = parseDateTime('Auction Start Date & Time') || parseDateTime('Auction Date & Time') || parseDateTime('Auction Date') || parseDateTime('Date of Auction');
+        const auctionStart = parseDateTime('Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start');
         if (auctionStart) data.auctionDate = auctionStart;
 
-        const auctionEnd = parseDateTime('Auction End Date & Time') || parseDateTime('Auction End Date');
+        const auctionEnd = parseDateTime('Auction End Date & Time|Auction End Date|Auction End');
         if (auctionEnd) data.auctionEndDate = auctionEnd;
 
         setFormData(data);
@@ -1837,8 +1847,11 @@ const AdminDashboard = () => {
                                             >
                                                 <option value="">All Cities</option>
                                                 {[...new Set(allAuctions.filter(a => {
-                                                    const isAdmin = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
-                                                    return a.createdByEmail === user?.email || isAdmin;
+                                                    const isAdmin = allUsers.some(u => 
+                                                        u.email?.trim().toLowerCase() === a.createdByEmail?.trim().toLowerCase() 
+                                                        && u.role === 'ADMIN'
+                                                    );
+                                                    return a.createdByEmail?.trim().toLowerCase() === user?.email?.trim().toLowerCase() || isAdmin;
                                                 }).map(a => a.cityName).filter(Boolean))].sort().map(city => (
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
@@ -1850,8 +1863,11 @@ const AdminDashboard = () => {
                                             >
                                                 <option value="">All Types</option>
                                                 {[...new Set(allAuctions.filter(a => {
-                                                    const isAdmin = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
-                                                    return a.createdByEmail === user?.email || isAdmin;
+                                                    const isAdmin = allUsers.some(u => 
+                                                        u.email?.trim().toLowerCase() === a.createdByEmail?.trim().toLowerCase() 
+                                                        && u.role === 'ADMIN'
+                                                    );
+                                                    return a.createdByEmail?.trim().toLowerCase() === user?.email?.trim().toLowerCase() || isAdmin;
                                                 }).map(a => a.propertyType).filter(Boolean))].sort().map(type => (
                                                     <option key={type} value={type}>{type}</option>
                                                 ))}
@@ -1872,12 +1888,19 @@ const AdminDashboard = () => {
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
                                                 const myAuctions = allAuctions.filter(a => {
+                                                    const creatorEmail = a.createdByEmail?.trim().toLowerCase();
+                                                    const currentUserEmail = user?.email?.trim().toLowerCase();
+                                                    
                                                     // Current user's own auctions
-                                                    if (a.createdByEmail === user?.email) return true;
+                                                    if (creatorEmail === currentUserEmail) return true;
                                                     // Superadmin override
-                                                    if (user?.email === 'madrasauction@gmail.com') return true;
-                                                    // Auctions created by ANY admin (so all admins can manage admin-posted content)
-                                                    const isOtherAdminPost = allUsers.some(u => u.email === a.createdByEmail && u.role === 'ADMIN');
+                                                    if (currentUserEmail === 'madrasauction@gmail.com') return true;
+                                                    
+                                                    // Check if it was created by ANY other admin from our user list
+                                                    const isOtherAdminPost = allUsers.some(u => 
+                                                        u.email?.trim().toLowerCase() === creatorEmail 
+                                                        && u.role === 'ADMIN'
+                                                    );
                                                     return isOtherAdminPost;
                                                 });
                                                 const filteredMyAuctions = myAuctions.filter(a => {
