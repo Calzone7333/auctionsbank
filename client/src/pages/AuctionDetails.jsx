@@ -152,28 +152,43 @@ const AuctionDetails = () => {
                             </div>
                         </div>
 
-                        {/* Image Section - Only shown if an image is actually uploaded and not broken */}
-                        {auction.imageUrl && !imageError && (
+                        {/* Image Gallery Section */}
+                        {((auction.imageUrls && auction.imageUrls.length > 0) || (auction.imageUrl && !imageError)) && (
                             <div className="space-y-4">
-                                <div className="relative rounded-lg overflow-hidden border border-slate-100 shadow-sm">
-                                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-                                        <span className="px-3 py-1 bg-white/90 text-red-600 text-[13px] font-bold italic shadow-sm rounded-sm uppercase tracking-widest">Property Preview</span>
+                                {/* Main Image */}
+                                <div className="relative rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 group">
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <span className="px-3 py-1 bg-white/90 text-brand-blue text-[10px] font-black shadow-sm rounded-full uppercase tracking-[0.2em] border border-blue-100">Property Preview</span>
                                     </div>
                                     <img
-                                        src={getFileUrl(auction.imageUrl)}
-                                        alt="Property View"
-                                        className="w-full aspect-[16/7] object-cover"
+                                        src={getFileUrl(auction.imageUrl || (auction.imageUrls && auction.imageUrls[0]))}
+                                        alt="Property Main View"
+                                        className="w-full aspect-[21/9] object-cover transition-transform duration-700 group-hover:scale-105"
                                         onError={() => setImageError(true)}
                                     />
                                 </div>
+
+                                {/* Thumbnails / Gallery */}
+                                {auction.imageUrls && auction.imageUrls.length > 1 && (
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                                        {auction.imageUrls.map((url, idx) => (
+                                            <button 
+                                                key={idx}
+                                                onClick={() => setAuction(prev => ({ ...prev, imageUrl: url }))}
+                                                className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${auction.imageUrl === url ? 'border-brand-blue ring-2 ring-brand-blue/20' : 'border-transparent hover:border-slate-200'}`}
+                                            >
+                                                <img src={getFileUrl(url)} className="w-full h-full object-cover" alt={`Thumb ${idx}`} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* Tabs */}
+                        {/* Section Header */}
                         <div className="border-b border-slate-200">
                             <div className="flex gap-8">
-                                <button className="pb-3 text-sm font-bold text-brand-dark border-b-2 border-brand-dark">Description</button>
-                                <button className="pb-3 text-sm font-medium text-slate-400 hover:text-slate-600">Auction History</button>
+                                <h2 className="pb-3 text-sm font-bold text-brand-dark border-b-2 border-brand-dark uppercase tracking-wider">Property Information</h2>
                             </div>
                         </div>
 
@@ -231,34 +246,57 @@ const AuctionDetails = () => {
 
                             {/* Auction File */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 py-4 items-start">
-                                <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">Download Auction File</span>
+                                <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight">Download Auction Files</span>
                                 <div className="md:col-span-2">
                                     {!isPremiumValid() ? (
                                         <div className="flex items-center gap-4 group">
-                                            <div className="p-3 bg-slate-100 rounded-lg border border-dashed border-slate-300">
+                                            <div className="p-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">
                                                 <Lock className="w-8 h-8 text-slate-400" />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[13px] text-slate-400 blur-[4px] select-none">notice_file_auction.pdf</span>
-                                                <Link to="/plans" className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-1 py-1 hover:underline">Subscribe to Download</Link>
+                                                <span className="text-[13px] text-slate-400 blur-[4px] select-none">auction_document_locked.pdf</span>
+                                                <Link to="/plans" className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-1 py-1 hover:underline">Subscribe to Unlock Documents</Link>
                                             </div>
+                                        </div>
+                                    ) : (auction.noticeUrls && auction.noticeUrls.length > 0) ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {auction.noticeUrls.map((url, idx) => (
+                                                <a
+                                                    key={idx}
+                                                    href={getFileUrl(url)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-brand-blue hover:shadow-md transition-all group"
+                                                >
+                                                    <div className="p-2 bg-red-50 text-red-500 rounded-lg group-hover:bg-red-500 group-hover:text-white transition-colors">
+                                                        <FileText className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[11px] font-bold text-slate-700 truncate uppercase tracking-tight">Doc {idx + 1}</p>
+                                                        <p className="text-[9px] text-slate-400 font-medium">Click to View</p>
+                                                    </div>
+                                                </a>
+                                            ))}
                                         </div>
                                     ) : auction.noticeUrl ? (
                                         <a
                                             href={getFileUrl(auction.noticeUrl)}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex flex-col items-center w-fit group"
+                                            className="flex items-center gap-4 group"
                                         >
-                                            <div className="p-3 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
-                                                <FileText className="w-8 h-8 text-red-500" />
+                                            <div className="p-4 bg-red-50 rounded-2xl group-hover:bg-red-500 group-hover:text-white transition-all shadow-sm">
+                                                <FileText className="w-8 h-8" />
                                             </div>
-                                            <span className="text-[10px] text-blue-500 mt-2 text-center max-w-[80px] leading-tight">
-                                                {auction.title || 'Auction Notice'}.pdf
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[13px] font-bold text-slate-700 truncate group-hover:text-brand-blue transition-colors uppercase tracking-tight">
+                                                    {auction.title || 'Auction Notice'}.pdf
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Primary Document • View Now</span>
+                                            </div>
                                         </a>
                                     ) : (
-                                        <span className="text-[13px] text-slate-400 italic">No file available</span>
+                                        <span className="text-[13px] text-slate-400 italic">No files available for this property</span>
                                     )}
                                 </div>
                             </div>

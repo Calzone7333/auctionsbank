@@ -42,19 +42,21 @@ import {
     Target,
     Activity,
     CreditCard,
-    Briefcase
+    Briefcase,
+    Plus,
+    FilePlus
 } from 'lucide-react';
-import { 
-    AreaChart, 
-    Area, 
+import {
+    AreaChart,
+    Area,
     BarChart,
     Bar,
     LineChart,
     Line,
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
     Legend,
     ResponsiveContainer,
     PieChart,
@@ -77,7 +79,7 @@ const AdminDashboard = () => {
     const [allAuctions, setAllAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    
+
     // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('');
@@ -108,15 +110,16 @@ const AdminDashboard = () => {
         emdLastDate: '',
         auctionDate: '',
         auctionEndDate: '',
-        inspectionDate: '',
         bankContactDetails: '',
         possession: '',
         noticeUrl: '',
-        imageUrl: ''
+        imageUrl: '',
+        noticeUrls: [],
+        imageUrls: []
     });
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
     const [autoFillText, setAutoFillText] = useState('');
 
     const handleAutoFill = () => {
@@ -125,227 +128,147 @@ const AdminDashboard = () => {
         const data = { ...formData };
         const text = autoFillText;
 
-        // More comprehensive field mappings with more synonyms and optional separators
+        // Mandating separators for common words to avoid false positives inside sentences
         const fieldMappings = {
-            bankName: /(?:Bank Name|Bank|Financial Institution|Branch|Bank Branch|Lender|Institution)[:\-\.=\s]+(?=\S)/i,
-            borrowerName: /(?:[Bb]orrower Name|[Bb]orrowers?|[Cc]o-[Bb]orrower|Client|Name of Borrower|Account Name)[:\-\.=\s]+(?=\S)/i,
-            propertyType: /(?:Property Type|Type|Category|Prop Type|Asset Category)[:\-\.=\s]+(?=\S)/i,
-            description: /(?:Description|Desc|Details|Property Details|Short Description|Property Info)[:\-\.=\s]+(?=\S)/i,
-            location: /(?:Location|Address|Property Location|Property Address|Prop Address|Site Address|Situated at)[:\-\.=\s]+(?=\S)/i,
-            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Sq\.?ft|Extent of Land|Size|Land Area)[:\-\.=\s]+(?=\S)/i,
-            locality: /(?:Locality|Loc|Area Name|Neighborhood|Mandal|Village|Tehsil)[:\-\.=\s]+(?=\S)/i,
-            cityName: /(?:City|Town|District|Place|State)[:\-\.=\s]+(?=\S)/i,
-            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price|Auction Price)[:\-\.=\s]+(?=\S)/i,
-            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit|EMD \(Rs\)|EMD Price)[:\-\.=\s]+(?=\S)/i,
-            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step|Min Increment)[:\-\.=\s]+(?=\S)/i,
-            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail|In-charge)[:\-\.=\s]+(?=\S)/i,
-            possession: /(?:Possession|Possession Type|Status of Possession|Nature of Possession)[:\-\.=\s]+(?=\S)/i,
-            emdLastDate: /(?:EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date|Last date for EMD)[:\-\.=\s]+(?=\S)/i,
-            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date|Date & Time of Auction)[:\-\.=\s]+(?=\S)/i,
-            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date|Auction Ending)[:\-\.=\s]+(?=\S)/i,
-            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date|Date of Inspection)[:\-\.=\s]+(?=\S)/i
+            bankName: /(?:Bank Name|Financial Institution|Lender|Institution)[:\-\.=]{1,}\s*/i,
+            borrowerName: /(?:Borrower Name|Borrower[s]?|Co-Borrower|Client|Name of Borrower|Account Name)[:\-\.=]{1,}\s*/i,
+            propertyType: /(?:Property Type|Type|Category|Prop Type|Asset Category)[:\-\.=]{1,}\s*/i,
+            description: /(?:Description|Desc|Details|Property Details|Short Description|Property Info)[:\-\.=]{1,}\s*/i,
+            location: /(?:Location|Address|Property Location|Property Address|Prop Address|Site Address|Situated at|Boundaries|North|South|East|West|GPS|Survey|Patta|Longitude|Latitude)[:\-\.=]{1,}\s*/i,
+            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Sq\.?ft|Extent of Land|Size|Land Area|Built-up|Undivided Share)[:\-\.=]{1,}\s*/i,
+            locality: /(?:Locality|Loc|Area Name|Neighborhood|Mandal|Village|Tehsil|Landmark|Near)[:\-\.=]{1,}\s*/i,
+            cityName: /(?:City|Town|District|Place|State)[:\-\.=]{1,}\s*/i,
+            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price|Auction Price)[:\-\.=]{1,}\s*/i,
+            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit|EMD \(Rs\)|EMD Price)[:\-\.=]{1,}\s*/i,
+            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step|Min Increment)[:\-\.=]{1,}\s*/i,
+            bankContactDetails: /(?:Bank Contact Details|Authorised Officer|Contact Officer|Contact Details|Contact No|Property ID|Website|Cell|Tel|Ph|Email|Mail|In-charge)[:\-\.=]{1,}\s*/i,
+            possession: /(?:Possession|Possession Type|Status of Possession|Nature of Possession)[:\-\.=]{1,}\s*/i,
+            emdLastDate: /(?:EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date|Last date for EMD)[:\-\.=]{1,}\s*/i,
+            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date|Date & Time of Auction|Auction Date & Time)[:\-\.=]{1,}\s*/i,
+            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date|Auction Ending)[:\-\.]{1,}\s*/i
         };
 
-        // Find all label positions
+        const startOfLineLabels = [
+            { field: 'bankName', regex: /^Bank[:\-\.=\s]+(?=\S)/im },
+            { field: 'bankContactDetails', regex: /^(?:Contact|Phone|Mobile|Ph)[:\-\.=\s]+(?=\S)/im },
+            { field: 'borrowerName', regex: /^Borrower[:\-\.=\s]+(?=\S)/im },
+            { field: 'area', regex: /^Area[:\-\.=\s]+(?=\S)/im },
+            { field: 'location', regex: /^(?:Location|Address)[:\-\.=\s]+(?=\S)/im }
+        ];
+
         const matches = [];
         Object.entries(fieldMappings).forEach(([field, regex]) => {
             const pattern = new RegExp(regex.source, 'gi');
             let match;
             while ((match = pattern.exec(text)) !== null) {
-                matches.push({
-                    field,
-                    index: match.index,
-                    length: match[0].length,
-                    label: match[0]
-                });
+                matches.push({ field, index: match.index, length: match[0].length, label: match[0] });
+            }
+        });
+        startOfLineLabels.forEach(({ field, regex }) => {
+            const pattern = new RegExp(regex.source, 'gim');
+            let match;
+            while ((match = pattern.exec(text)) !== null) {
+                matches.push({ field, index: match.index, length: match[0].length, label: match[0] });
             }
         });
 
-        // Filter out overlapping matches (keep the first/longer match)
         matches.sort((a, b) => a.index - b.index || b.length - a.length);
         const filteredMatches = [];
         let lastEnd = -1;
         matches.forEach(m => {
-            if (m.index >= lastEnd) {
-                filteredMatches.push(m);
-                lastEnd = m.index + m.length;
-            }
+            if (m.index >= lastEnd) { filteredMatches.push(m); lastEnd = m.index + m.length; }
         });
 
         const extracted = {};
         for (let i = 0; i < filteredMatches.length; i++) {
             const current = filteredMatches[i];
             const next = filteredMatches[i + 1];
-            
             let start = current.index + current.length;
             let end = next ? next.index : text.length;
-            
             let value = text.substring(start, end).trim();
             
-            // If the value contains common "next field" markers that weren't caught as labels
-            // (e.g. "Property Type" followed by "Description" without a colon)
-            const markers = Object.values(fieldMappings).map(r => r.source.split('|')[0].replace('(?:', '').replace(/[\[\]\(\)\.\+\*]/g, '')).filter(Boolean);
-            markers.forEach(mark => {
-                const pos = value.indexOf('\n' + mark);
-                if (pos !== -1 && (end === text.length || pos < end - start)) {
-                    value = value.substring(0, pos).trim();
-                }
-            });
+            const cleanPrefix = /^(?:Branch Office|Branch|Lender|Borrower|Address|Location|Area|Details|North|South|East|West|GPS|Survey|Patta|Website|Property ID|[:\-\*=\.\s\[\]\(\)])+/i;
+            value = value.replace(cleanPrefix, '').trim();
 
-            // Clean value: If it's more than 5 lines, it's likely bleeding into next section unless it's description/location
-            const lines = value.split('\n');
-            if (lines.length > 1) {
-                if (!['description', 'location', 'bankContactDetails'].includes(current.field)) {
-                    // For short fields, just take the first line or first meaningful part
-                    value = lines[0].trim();
-                }
-            }
-
-            // Remove trailing chars that look like field boundaries or garbage
-            value = value.replace(/[\[\]{}()\*\|#]+$/, '').trim();
-            
             if (extracted[current.field]) {
-                // If we found the same field multiple times, append if it's a multi-line type
-                if (['bankContactDetails', 'description', 'location'].includes(current.field)) {
-                    if (!extracted[current.field].includes(value)) {
-                        extracted[current.field] += ' | ' + value;
-                    }
+                if (['bankContactDetails', 'description', 'location', 'borrowerName'].includes(current.field)) {
+                    extracted[current.field] += ' | ' + value;
                 }
             } else {
                 extracted[current.field] = value;
             }
         }
 
-        // --- Post-processing ---
-        
-        const newData = { ...data };
-
-        // Simple strings
-        if (extracted.bankName) newData.bankName = extracted.bankName;
-        if (extracted.borrowerName) newData.borrowerName = extracted.borrowerName;
-        if (extracted.description) newData.description = extracted.description;
-        if (extracted.location) newData.location = extracted.location;
-        if (extracted.area) newData.area = extracted.area;
-        if (extracted.locality) newData.locality = extracted.locality;
+        if (extracted.bankName) data.bankName = extracted.bankName;
+        if (extracted.borrowerName) data.borrowerName = extracted.borrowerName;
+        if (extracted.propertyType) data.propertyType = extracted.propertyType;
+        if (extracted.description) data.description = extracted.description;
+        if (extracted.location) data.location = extracted.location;
+        if (extracted.area) data.area = extracted.area;
+        if (extracted.locality) data.locality = extracted.locality;
         if (extracted.possession) {
             const p = extracted.possession.toLowerCase();
-            if (p.includes('phys')) newData.possession = 'Physical';
-            else if (p.includes('symb')) newData.possession = 'Symbolic';
-            else newData.possession = extracted.possession;
+            if (p.includes('phys')) data.possession = 'Physical';
+            else if (p.includes('symb') || p.includes('const')) data.possession = 'Symbolic';
+            else data.possession = extracted.possession;
         }
-        
-        // City Name cleanup
-        if (extracted.cityName) {
-            // Remove things like "Dist:" or "District" if they appear in the value
-            let c = extracted.cityName.replace(/(?:District|Dist|City|Town)[:\s]*/i, '').split(',').pop().trim();
-            if (c.length > 30) c = c.split(' ').pop(); 
-            newData.cityName = c;
-        }
+        if (extracted.cityName) data.cityName = extracted.cityName.split('/')[0].split(',')[0].replace(/(?:District|City|Town|State)[:\s]*/i, '').trim();
 
-        // Financials (numbers)
         const parseNum = (val) => {
             if (!val) return '';
-            // Remove currency symbols, commas, and other non-numeric stuff EXCEPT decimal point
-            // handle "10 Lakhs" or "1.5 Crores"
             let clean = val.replace(/,/g, '').toLowerCase();
-            
-            let multiplier = 1;
-            if (clean.includes('lakh')) multiplier = 100000;
-            if (clean.includes('crore') || clean.includes('cr')) multiplier = 10000000;
-            
-            const numMatch = clean.match(/(\d+\.?\d*)/);
-            if (numMatch) {
-                let num = parseFloat(numMatch[1]);
-                if (multiplier > 1) num = num * multiplier;
-                return Math.floor(num).toString();
+            let mult = 1;
+            if (clean.includes('lakh')) mult = 100000;
+            if (clean.includes('crore') || clean.includes('cr')) mult = 10000000;
+            const nm = clean.match(/(\d+(?:\.\d+)?)/);
+            if (nm) {
+                let n = parseFloat(nm[1]);
+                if (mult > 1) n = n * mult;
+                return Math.floor(n).toString();
             }
             return '';
         };
-        
-        if (extracted.reservePrice) newData.reservePrice = parseNum(extracted.reservePrice);
-        if (extracted.emdAmount) newData.emdAmount = parseNum(extracted.emdAmount);
-        if (extracted.bidIncrement) newData.bidIncrement = parseNum(extracted.bidIncrement);
+        if (extracted.reservePrice) data.reservePrice = parseNum(extracted.reservePrice);
+        if (extracted.emdAmount) data.emdAmount = parseNum(extracted.emdAmount);
+        if (extracted.bidIncrement) data.bidIncrement = parseNum(extracted.bidIncrement);
 
-        // Dates and Times
         const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-        
         const parseDate = (val) => {
             if (!val) return null;
-            let dateStr = "";
-            let timeStr = "10:00"; // Default
-
-            // Try DD-MM-YYYY format
-            const dmyMatch = val.match(/(\d{1,2})[./\-\s]+(\d{1,2})[./\-\s]+(\d{2,4})/);
-            if (dmyMatch) {
-                let [_, d, m, y] = dmyMatch;
+            let ds = "";
+            let ts = "10:00"; 
+            const dmy = val.match(/(\d{1,2})[./\-\s]+(\d{1,2})[./\-\s]+(\d{2,4})/);
+            if (dmy) {
+                let [_, d, m, y] = dmy;
                 if (y.length === 2) y = "20" + y;
-                dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                ds = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
             } else {
-                // Try format like "10-Jan-2024" or "Jan 10, 2024"
-                const monthMatch = val.match(new RegExp(`(\\d{1,2})[./\\-\\s]+(${monthNames.join('|')})[./\\-\\s]+(\\d{2,4})`, 'i'));
-                if (monthMatch) {
-                    let [_, d, m, y] = monthMatch;
+                const mm = val.match(new RegExp(`(\\d{1,2})[./\\-\\s]+(${monthNames.join('|')})[./\\-\\s]+(\\d{2,4})`, 'i'));
+                if (mm) {
+                    let [_, d, m, y] = mm;
                     if (y.length === 2) y = "20" + y;
-                    const mIdx = monthNames.indexOf(m.toLowerCase().substring(0, 3)) + 1;
-                    dateStr = `${y}-${mIdx.toString().padStart(2, '0')}-${d.padStart(2, '0')}`;
+                    const mI = monthNames.indexOf(m.toLowerCase().substring(0, 3)) + 1;
+                    ds = `${y}-${mI.toString().padStart(2, '0')}-${d.padStart(2, '0')}`;
                 }
             }
-
-            if (!dateStr) {
-                // Try "Jan 10 2024"
-                const monthFirstMatch = val.match(new RegExp(`(${monthNames.join('|')})[./\\-\\s]+(\\d{1,2})[./\\-\\s]+(\\d{2,4})`, 'i'));
-                if (monthFirstMatch) {
-                    let [_, m, d, y] = monthFirstMatch;
-                    if (y.length === 2) y = "20" + y;
-                    const mIdx = monthNames.indexOf(m.toLowerCase().substring(0, 3)) + 1;
-                    dateStr = `${y}-${mIdx.toString().padStart(2, '0')}-${d.padStart(2, '0')}`;
-                }
+            if (!ds) return null;
+            const tm = val.match(/(\d{1,2})[:.](\d{2})(?:\s*:?\d{2})?(?:\s*([APM]{2}))?/i);
+            if (tm) {
+                let h = parseInt(tm[1], 10);
+                const m = tm[2], mod = tm[3]?.toUpperCase();
+                if (mod === 'PM' && h < 12) h += 12;
+                if (mod === 'AM' && h === 12) h = 0;
+                ts = `${h.toString().padStart(2, '0')}:${m.padStart(2, '0')}`;
             }
-
-            if (!dateStr) return null;
-
-            // Search for time (HH:MM)
-            const timeMatch = val.match(/(\d{1,2})[:.](\d{2})(?:\s*:?\d{2})?(?:\s*([APM]{2}))?/i);
-            if (timeMatch) {
-                let h = parseInt(timeMatch[1], 10);
-                const min = timeMatch[2];
-                const modifier = timeMatch[3]?.toUpperCase();
-                
-                if (modifier === 'PM' && h < 12) h += 12;
-                if (modifier === 'AM' && h === 12) h = 0;
-                
-                timeStr = `${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
-            }
-
-            return `${dateStr}T${timeStr}`;
+            return `${ds}T${ts}`;
         };
+        if (extracted.emdLastDate) data.emdLastDate = parseDate(extracted.emdLastDate);
+        if (extracted.auctionDate) data.auctionDate = parseDate(extracted.auctionDate);
+        if (extracted.auctionEndDate) data.auctionEndDate = parseDate(extracted.auctionEndDate);
 
-        if (extracted.emdLastDate) newData.emdLastDate = parseDate(extracted.emdLastDate);
-        if (extracted.auctionDate) newData.auctionDate = parseDate(extracted.auctionDate);
-        if (extracted.auctionEndDate) newData.auctionEndDate = parseDate(extracted.auctionEndDate);
-        if (extracted.inspectionDate) newData.inspectionDate = parseDate(extracted.inspectionDate);
+        if (extracted.bankContactDetails) data.bankContactDetails = extracted.bankContactDetails.replace(/[|#]+/g, ' ').trim();
 
-        // Concatenate contact info
-        if (extracted.bankContactDetails) {
-            newData.bankContactDetails = extracted.bankContactDetails.replace(/[\|#]+/g, ' ').trim();
-        }
-
-        // Property Type mapping
-        if (extracted.propertyType) {
-            const pt = extracted.propertyType.toLowerCase();
-            if (pt.includes('flat') || pt.includes('floor') || pt.includes('apartment')) newData.propertyType = 'Flat and Floor';
-            else if (pt.includes('house') || pt.includes('residential')) newData.propertyType = 'House and Residential Plot';
-            else if (pt.includes('land') || pt.includes('plot') || pt.includes('site')) newData.propertyType = 'Land, Plot and Site';
-            else if (pt.includes('commercial')) newData.propertyType = 'All Commercial';
-            else if (pt.includes('office')) newData.propertyType = 'Office';
-            else if (pt.includes('shop')) newData.propertyType = 'Shop';
-            else if (pt.includes('industrial')) newData.propertyType = 'Industrial Plots, Land & Sheds';
-            else if (pt.includes('factory')) newData.propertyType = 'Factory Land & buildings';
-            else if (pt.includes('car')) newData.propertyType = 'Car';
-            else if (pt.includes('machinery')) newData.propertyType = 'Plant and Machinery';
-        }
-
-        setFormData(newData);
+        setFormData(data);
         setAutoFillText('');
         alert('Magic Auto-Fill completed! Please review the fields.');
     };
@@ -356,15 +279,22 @@ const AdminDashboard = () => {
     };
 
     const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedImage(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            setSelectedImages(prev => [...prev, ...files]);
+            
+            const newPreviews = files.map(file => URL.createObjectURL(file));
+            setImagePreviews(prev => [...prev, ...newPreviews]);
         }
+    };
+
+    const removeImage = (index) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => {
+            const newPreviews = [...prev];
+            URL.revokeObjectURL(newPreviews[index]);
+            return newPreviews.filter((_, i) => i !== index);
+        });
     };
 
     const handleFormSubmit = async (e) => {
@@ -372,112 +302,77 @@ const AdminDashboard = () => {
         setFormLoading(true);
 
         try {
-            let uploadedFileUrl = formData.noticeUrl;
+            let finalImageUrls = [...(formData.imageUrls || [])];
+            let finalNoticeUrls = [...(formData.noticeUrls || [])];
 
-            if (selectedFile) {
-                const uploadData = new FormData();
-                uploadData.append('file', selectedFile);
-                const uploadRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${user.token}` },
-                    body: uploadData
-                });
-                if (uploadRes.status === 401) {
-                    alert('Session expired. Please login again.');
-                    logout();
-                    return;
-                }
-                if (uploadRes.status === 403) {
-                    alert('You do not have permission to upload files. Please ensure you are logged in as an administrator.');
-                    return;
-                }
-                if (uploadRes.ok) {
-                    const uploadResult = await uploadRes.json();
-                    uploadedFileUrl = uploadResult.url;
+            // Upload new images if any
+            if (selectedImages.length > 0) {
+                for (const imgFile of selectedImages) {
+                    const imgData = new FormData();
+                    imgData.append('file', imgFile);
+                    const imgRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${user.token}` },
+                        body: imgData
+                    });
+                    if (imgRes.ok) {
+                        const uploadResult = await imgRes.json();
+                        finalImageUrls.push(uploadResult.url);
+                    }
                 }
             }
 
-            let uploadedImageUrl = formData.imageUrl;
-            if (selectedImage) {
-                const uploadData = new FormData();
-                uploadData.append('file', selectedImage);
-                const uploadRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${user.token}` },
-                    body: uploadData
-                });
-                if (uploadRes.status === 401) {
-                    alert('Session expired. Please login again.');
-                    logout();
-                    return;
-                }
-                if (uploadRes.status === 403) {
-                    alert('You do not have permission to upload property images.');
-                    return;
-                }
-                if (uploadRes.ok) {
-                    const uploadResult = await uploadRes.json();
-                    uploadedImageUrl = uploadResult.url;
+            // Upload new notices if any
+            if (selectedFiles.length > 0) {
+                for (const noticeFile of selectedFiles) {
+                    const noticeData = new FormData();
+                    noticeData.append('file', noticeFile);
+                    const noticeRes = await fetch(`${API_BASE_URL}/auctions/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${user.token}` },
+                        body: noticeData
+                    });
+                    if (noticeRes.ok) {
+                        const uploadResult = await noticeRes.json();
+                        finalNoticeUrls.push(uploadResult.url);
+                    }
                 }
             }
 
-            const isEditing = !!editingAuctionId;
-            const url = isEditing
+            const dataToSubmit = {
+                ...formData,
+                imageUrl: finalImageUrls[0] || '', // First image as main
+                imageUrls: finalImageUrls,
+                noticeUrl: finalNoticeUrls[0] || '', // First notice as main
+                noticeUrls: finalNoticeUrls
+            };
+
+            const url = editingAuctionId 
                 ? `${API_BASE_URL}/auctions/${editingAuctionId}`
                 : `${API_BASE_URL}/auctions`;
-
-            const finalFormData = { ...formData, noticeUrl: uploadedFileUrl, imageUrl: uploadedImageUrl };
-
-            // Convert empty strings to null for backend compatibility
-            ['emdLastDate', 'auctionDate', 'auctionEndDate', 'inspectionDate'].forEach(key => {
-                if (finalFormData[key] === '') finalFormData[key] = null;
-            });
-            ['reservePrice', 'emdAmount', 'bidIncrement'].forEach(key => {
-                if (finalFormData[key] === '') finalFormData[key] = null;
-            });
-
-            // Auto-generate hidden title/description if the user has omitted them from the UI
-            if (!finalFormData.title) {
-                finalFormData.title = `${finalFormData.propertyType || 'Property'} at ${finalFormData.cityName || 'Location'}`;
-            }
+            
+            const method = editingAuctionId ? 'PUT' : 'POST';
 
             const response = await fetch(url, {
-                method: isEditing ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user.token}`
-                },
-                body: JSON.stringify(finalFormData),
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+                body: JSON.stringify(dataToSubmit)
             });
 
             if (response.ok) {
-                alert(isEditing ? 'Auction updated successfully!' : 'Auction posted successfully!');
-                setFormData({
-                    title: '',
-                    description: '',
-                    borrowerName: '',
-                    bankName: '',
-                    propertyType: '',
-                    location: '',
-                    area: '',
-                    locality: '',
-                    cityName: '',
-                    reservePrice: '',
-                    emdAmount: '',
-                    bidIncrement: '',
-                    emdLastDate: '',
-                    auctionDate: '',
-                    auctionEndDate: '',
-                    inspectionDate: '',
-                    bankContactDetails: '',
-                    possession: '',
-                    noticeUrl: '',
-                    imageUrl: '' // Add this
-                });
-                setSelectedFile(null);
-                setSelectedImage(null); // Add this
-                setImagePreview(null); // Add this
+                alert(editingAuctionId ? 'Auction updated successfully!' : 'Auction posted successfully!');
                 setEditingAuctionId(null);
+                setFormData({
+                    title: '', description: '', borrowerName: '', bankName: '',
+                    propertyType: '', location: '', area: '', locality: '',
+                    cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '',
+                    emdLastDate: '', auctionDate: '', auctionEndDate: '', 
+                    bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: '',
+                    noticeUrls: [], imageUrls: []
+                });
+                setSelectedFiles([]);
+                setSelectedImages([]);
+                setImagePreviews([]);
                 setAutoFillText(''); // Clear auto-fill text
                 setActiveTab(isEditing ? 'my-auctions' : 'auctions');
 
@@ -657,7 +552,7 @@ const AdminDashboard = () => {
 
             {/* Mobile Overlay */}
             {isSidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
@@ -687,7 +582,7 @@ const AdminDashboard = () => {
             <main className="flex-1 lg:ml-64 flex flex-col h-screen overflow-hidden">
                 {/* Fixed Top Header */}
                 <header className="bg-white border-b border-slate-200 px-6 lg:px-10 py-3 flex justify-between items-center z-20 shrink-0">
-                    <button 
+                    <button
                         onClick={() => setIsSidebarOpen(true)}
                         className="lg:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg"
                     >
@@ -735,9 +630,9 @@ const AdminDashboard = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="relative group">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                                            <input 
-                                                type="text" 
-                                                placeholder="Search Dashboard..." 
+                                            <input
+                                                type="text"
+                                                placeholder="Search Dashboard..."
                                                 className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue outline-none transition-all w-48"
                                             />
                                         </div>
@@ -779,12 +674,12 @@ const AdminDashboard = () => {
                                             <div>
                                                 <h3 className="text-base font-display font-black text-brand-dark">Property Growth</h3>
                                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
-                                                    {chartRange === '7days' ? 'Daily velocity (7 Days)' : 
-                                                     chartRange === '30days' ? 'Daily velocity (30 Days)' : 
-                                                     'Monthly velocity (Full Year)'}
+                                                    {chartRange === '7days' ? 'Daily velocity (7 Days)' :
+                                                        chartRange === '30days' ? 'Daily velocity (30 Days)' :
+                                                            'Monthly velocity (Full Year)'}
                                                 </p>
                                             </div>
-                                            <select 
+                                            <select
                                                 value={chartRange}
                                                 onChange={(e) => setChartRange(e.target.value)}
                                                 className="text-[10px] font-black uppercase tracking-widest border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none bg-slate-50 cursor-pointer hover:border-brand-blue/50 transition-colors"
@@ -796,7 +691,7 @@ const AdminDashboard = () => {
                                         </div>
                                         <div className="h-[280px] w-full">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart 
+                                                <AreaChart
                                                     data={(() => {
                                                         const now = new Date();
                                                         if (chartRange === '12months') {
@@ -836,9 +731,9 @@ const AdminDashboard = () => {
                                                         }, {});
 
                                                         return lastNDays.map(date => ({
-                                                            name: new Date(date).toLocaleDateString('en-US', { 
-                                                                day: days === 7 ? 'numeric' : 'numeric', 
-                                                                month: days === 7 ? 'short' : 'short' 
+                                                            name: new Date(date).toLocaleDateString('en-US', {
+                                                                day: days === 7 ? 'numeric' : 'numeric',
+                                                                month: days === 7 ? 'short' : 'short'
                                                             }),
                                                             uploads: counts[date] || 0
                                                         }));
@@ -846,30 +741,30 @@ const AdminDashboard = () => {
                                                 >
                                                     <defs>
                                                         <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#0066FF" stopOpacity={0.1}/>
-                                                            <stop offset="95%" stopColor="#0066FF" stopOpacity={0}/>
+                                                            <stop offset="5%" stopColor="#0066FF" stopOpacity={0.1} />
+                                                            <stop offset="95%" stopColor="#0066FF" stopOpacity={0} />
                                                         </linearGradient>
                                                     </defs>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                    <XAxis 
-                                                        dataKey="name" 
-                                                        axisLine={false} 
-                                                        tickLine={false} 
-                                                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
+                                                    <XAxis
+                                                        dataKey="name"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
                                                         dy={10}
                                                         interval={chartRange === '30days' ? 4 : 0}
                                                     />
                                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
-                                                    <Tooltip 
+                                                    <Tooltip
                                                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '11px' }}
                                                     />
-                                                    <Area 
-                                                        type="monotone" 
-                                                        dataKey="uploads" 
-                                                        stroke="#0066FF" 
-                                                        strokeWidth={4} 
-                                                        fillOpacity={1} 
-                                                        fill="url(#chartGradient)" 
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey="uploads"
+                                                        stroke="#0066FF"
+                                                        strokeWidth={4}
+                                                        fillOpacity={1}
+                                                        fill="url(#chartGradient)"
                                                     />
                                                 </AreaChart>
                                             </ResponsiveContainer>
@@ -990,7 +885,7 @@ const AdminDashboard = () => {
                                                             d.setDate(d.getDate() - i);
                                                             return d.toISOString().split('T')[0];
                                                         }).reverse();
-                                                        
+
                                                         const counts = allUsers.reduce((acc, user) => {
                                                             const date = user.createdAt?.split('T')[0] || user.dateJoined?.split('T')[0];
                                                             if (date) acc[date] = (acc[date] || 0) + 1;
@@ -1004,22 +899,22 @@ const AdminDashboard = () => {
                                                     })()}
                                                 >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                    <XAxis 
-                                                        dataKey="name" 
-                                                        axisLine={false} 
-                                                        tickLine={false} 
-                                                        tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} 
+                                                    <XAxis
+                                                        dataKey="name"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }}
                                                         interval={2}
                                                     />
                                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} />
-                                                    <Tooltip 
+                                                    <Tooltip
                                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
                                                     />
-                                                    <Line 
-                                                        type="stepAfter" 
-                                                        dataKey="users" 
-                                                        stroke="#0066FF" 
-                                                        strokeWidth={3} 
+                                                    <Line
+                                                        type="stepAfter"
+                                                        dataKey="users"
+                                                        stroke="#0066FF"
+                                                        strokeWidth={3}
                                                         dot={{ r: 4, fill: '#0066FF', strokeWidth: 2, stroke: '#fff' }}
                                                         activeDot={{ r: 6, strokeWidth: 0 }}
                                                     />
@@ -1051,14 +946,14 @@ const AdminDashboard = () => {
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <BarChart data={priceData} layout="vertical" margin={{ left: 20 }}>
                                                             <XAxis type="number" hide />
-                                                            <YAxis 
-                                                                dataKey="name" 
-                                                                type="category" 
-                                                                axisLine={false} 
-                                                                tickLine={false} 
-                                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} 
+                                                            <YAxis
+                                                                dataKey="name"
+                                                                type="category"
+                                                                axisLine={false}
+                                                                tickLine={false}
+                                                                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
                                                             />
-                                                            <Tooltip 
+                                                            <Tooltip
                                                                 cursor={{ fill: '#f8fafc' }}
                                                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
                                                             />
@@ -1105,14 +1000,14 @@ const AdminDashboard = () => {
                                                     margin={{ bottom: 20 }}
                                                 >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                    <XAxis 
-                                                        dataKey="name" 
-                                                        axisLine={false} 
-                                                        tickLine={false} 
-                                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} 
+                                                    <XAxis
+                                                        dataKey="name"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
                                                     />
                                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
-                                                    <Tooltip 
+                                                    <Tooltip
                                                         cursor={{ fill: '#f8fafc' }}
                                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'black', fontSize: '10px' }}
                                                     />
@@ -1152,7 +1047,7 @@ const AdminDashboard = () => {
                                                                 <span className="text-[10px] font-black text-slate-400">{bank.count} Assets</span>
                                                             </div>
                                                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                                <div 
+                                                                <div
                                                                     className="h-full bg-brand-blue transition-all duration-1000 ease-out"
                                                                     style={{ width: `${(bank.count / total) * 100}%` }}
                                                                 />
@@ -1164,7 +1059,7 @@ const AdminDashboard = () => {
                                         <div className="mt-8 pt-6 border-t border-slate-100">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex -space-x-2">
-                                                    {[1,2,3,4].map(i => (
+                                                    {[1, 2, 3, 4].map(i => (
                                                         <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 overflow-hidden">
                                                             BK
                                                         </div>
@@ -1229,7 +1124,7 @@ const AdminDashboard = () => {
                                             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-6">
                                                 <div className="w-[92%] h-full bg-brand-blue rounded-full shadow-[0_0_10px_rgba(0,102,255,0.5)]" />
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => setActiveTab('post-auction')}
                                                 className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
                                             >
@@ -1349,14 +1244,14 @@ const AdminDashboard = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Description</label>
-                                                <textarea
+                                                <input
+                                                    type="text"
                                                     name="description"
-                                                    rows="1"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none resize-none"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
                                                     placeholder="Brief property description"
                                                     value={formData.description}
                                                     onChange={handleFormChange}
-                                                ></textarea>
+                                                />
                                             </div>
                                         </div>
 
@@ -1364,14 +1259,14 @@ const AdminDashboard = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location</label>
-                                                <textarea
+                                                <input
+                                                    type="text"
                                                     name="location"
-                                                    rows="1"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none resize-none"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
                                                     placeholder="Full property address"
                                                     value={formData.location}
                                                     onChange={handleFormChange}
-                                                ></textarea>
+                                                />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Area (Dimensions)</label>
@@ -1463,7 +1358,7 @@ const AdminDashboard = () => {
                                         </div>
 
                                         {/* Row 6: Dates */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Submission Date</label>
                                                 <input
@@ -1494,20 +1389,10 @@ const AdminDashboard = () => {
                                                     onChange={handleFormChange}
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Inspection Date</label>
-                                                <input
-                                                    type="datetime-local"
-                                                    name="inspectionDate"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                    value={formData.inspectionDate}
-                                                    onChange={handleFormChange}
-                                                />
-                                            </div>
                                         </div>
 
-                                        {/* Row 7: Bank Contact Details */}
-                                        <div className="grid grid-cols-1 gap-6">
+                                        {/* Row 7: Bank Contact & Possession */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
                                                 <input
@@ -1519,62 +1404,180 @@ const AdminDashboard = () => {
                                                     onChange={handleFormChange}
                                                 />
                                             </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Possession Type</label>
+                                                <select
+                                                    name="possession"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.possession}
+                                                    onChange={handleFormChange}
+                                                >
+                                                    <option value="">Select Possession Status</option>
+                                                    <option value="Symbolic">Symbolic</option>
+                                                    <option value="Physical">Physical</option>
+                                                    <option value="Constructive">Constructive</option>
+                                                    <option value="Non-available">Non-available</option>
+                                                </select>
+                                            </div>
                                         </div>
 
                                         {/* Row 8: Property Image & Auction PDF */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200">
+                                        <div className="grid grid-cols-1 gap-8 bg-slate-50/50 p-6 rounded-2xl border border-dashed border-slate-200">
+                                            {/* Property Images Section */}
                                             <div>
-                                                <label className="block text-xs font-black text-brand-dark mb-2 uppercase tracking-[0.15em]">Property Image (Display)</label>
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="relative group w-full aspect-video rounded-lg border-2 border-dashed border-slate-200 bg-white overflow-hidden flex items-center justify-center hover:border-brand-blue/50 transition-all cursor-pointer">
-                                                        {imagePreview || formData.imageUrl ? (
-                                                            <img
-                                                                src={imagePreview || getFileUrl(formData.imageUrl)}
-                                                                className="w-full h-full object-cover"
-                                                                alt="Preview"
-                                                            />
-                                                        ) : (
-                                                            <div className="text-center">
-                                                                <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-1" />
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Click to upload image</span>
-                                                            </div>
-                                                        )}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-black text-brand-dark uppercase tracking-[0.15em]">Property Images</label>
+                                                        <p className="text-[10px] text-slate-400 font-bold mt-1">First image will be the display photo. Others appear in gallery.</p>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <button type="button" className="px-4 py-2 bg-brand-blue text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark transition-all shadow-sm flex items-center gap-2">
+                                                            <Plus className="w-3 h-3" /> Add Image
+                                                        </button>
                                                         <input
                                                             type="file"
+                                                            multiple
+                                                            accept="image/*"
                                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                                             onChange={handleImageChange}
                                                         />
                                                     </div>
-                                                    {imagePreview && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => { setSelectedImage(null); setImagePreview(null); }}
-                                                            className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 w-fit"
-                                                        >
-                                                            Remove Selected Image
-                                                        </button>
-                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                                    {/* Main Display Image Preview */}
+                                                    <div className="lg:col-span-12">
+                                                        {(imagePreviews.length > 0 || (formData.imageUrls && formData.imageUrls.length > 0)) ? (
+                                                            <div className="space-y-4">
+                                                                <div className="relative group aspect-[21/9] rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                                                                    <img 
+                                                                        src={imagePreviews[0] || getFileUrl(formData.imageUrls[0])} 
+                                                                        className="w-full h-full object-cover" 
+                                                                        alt="Main Preview" 
+                                                                    />
+                                                                    <div className="absolute top-4 left-4 px-3 py-1 bg-brand-blue text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                                                                        Main Display
+                                                                    </div>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => removeImage(0)}
+                                                                        className="absolute top-4 right-4 p-2 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+                                                                    >
+                                                                        <X className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Remaining Images Grid */}
+                                                                {(imagePreviews.length > 1 || (formData.imageUrls && formData.imageUrls.length > 1)) && (
+                                                                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                                        {/* Handle Previews for newly selected images beyond the first one */}
+                                                                        {imagePreviews.slice(1).map((preview, idx) => (
+                                                                            <div key={`new-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white">
+                                                                                <img src={preview} className="w-full h-full object-cover" alt="Other Preview" />
+                                                                                <button 
+                                                                                    type="button"
+                                                                                    onClick={() => removeImage(idx + 1)}
+                                                                                    className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+                                                                                >
+                                                                                    <X size={12} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                        {/* Handle existing imageUrls from backend beyond the first one if editing */}
+                                                                        {formData.imageUrls && formData.imageUrls.slice(1).map((url, idx) => (
+                                                                            <div key={`old-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white">
+                                                                                <img src={getFileUrl(url)} className="w-full h-full object-cover" alt="Saved Preview" />
+                                                                                <button 
+                                                                                    type="button"
+                                                                                    onClick={() => setFormData(p => ({ ...p, imageUrls: p.imageUrls.filter((_, i) => i !== idx + 1) }))}
+                                                                                    className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+                                                                                >
+                                                                                    <X size={12} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="relative group aspect-[21/9] rounded-2xl border-2 border-dashed border-slate-200 bg-white flex flex-col items-center justify-center hover:border-brand-blue/30 transition-all cursor-pointer">
+                                                                <ImageIcon className="w-10 h-10 text-slate-300 mb-2" />
+                                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No images selected</p>
+                                                                <p className="text-[10px] text-slate-300 font-bold mt-1">Images are optional</p>
+                                                                <input
+                                                                    type="file"
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                    onChange={handleImageChange}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col justify-end pb-1">
-                                                <label className="block text-xs font-black text-brand-dark mb-2 uppercase tracking-[0.15em]">Auction Notice (PDF/Image)</label>
-                                                <div className="p-4 bg-white rounded-lg border border-slate-200 border-dashed">
-                                                    <input
-                                                        type="file"
-                                                        className="w-full text-[11px] font-medium text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer"
-                                                        onChange={(e) => setSelectedFile(e.target.files[0])}
-                                                    />
-                                                    {formData.noticeUrl && !selectedFile && (
-                                                        <div className="mt-3 flex items-center gap-2">
-                                                            <div className="w-8 h-10 bg-slate-100 rounded flex items-center justify-center">
-                                                                <FileText className="w-4 h-4 text-brand-blue" />
+
+                                            {/* Auction Notice Section */}
+                                            <div className="pt-6 border-t border-slate-200 border-dashed">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-black text-brand-dark uppercase tracking-[0.15em]">Auction Notice (PDF/Image)</label>
+                                                        <p className="text-[10px] text-slate-400 font-bold mt-1">Upload multiple notices, certificates, or property documents.</p>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <button type="button" className="px-4 py-2 bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark transition-all shadow-sm flex items-center gap-2">
+                                                            <FilePlus className="w-3 h-3" /> Add Doc
+                                                        </button>
+                                                        <input
+                                                            type="file"
+                                                            multiple
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            onChange={(e) => setSelectedFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    {/* Existing Docs */}
+                                                    {formData.noticeUrls && formData.noticeUrls.map((url, idx) => (
+                                                        <div key={`saved-doc-${idx}`} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-blue-50 text-brand-blue rounded-lg">
+                                                                    <FileText className="w-4 h-4" />
+                                                                </div>
+                                                                <span className="text-[11px] font-black text-slate-600 uppercase tracking-tight truncate max-w-[200px]">SAVED_NOTICE_{idx + 1}</span>
                                                             </div>
-                                                            <div className="min-w-0">
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Attached Document</p>
-                                                                <a href={getFileUrl(formData.noticeUrl)} target="_blank" rel="noreferrer" className="text-xs text-brand-blue font-bold truncate block hover:underline">
-                                                                    View Current File
-                                                                </a>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setFormData(p => ({ ...p, noticeUrls: p.noticeUrls.filter((_, i) => i !== idx) }))}
+                                                                className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {/* New Selected Docs */}
+                                                    {selectedFiles.map((file, idx) => (
+                                                        <div key={`new-doc-${idx}`} className="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-brand-blue/20 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-brand-blue text-white rounded-lg">
+                                                                    <FileText className="w-4 h-4" />
+                                                                </div>
+                                                                <span className="text-[11px] font-black text-brand-blue uppercase tracking-tight truncate max-w-[200px]">{file.name}</span>
                                                             </div>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                                                className="p-1.5 text-brand-blue/50 hover:text-red-500 rounded-lg"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {(!selectedFiles.length && (!formData.noticeUrls || !formData.noticeUrls.length)) && (
+                                                        <div className="py-4 text-center">
+                                                            <FileText className="w-8 h-8 text-slate-200 mx-auto mb-1" />
+                                                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No documents added</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1588,7 +1591,7 @@ const AdminDashboard = () => {
                                                     onClick={() => {
                                                         setEditingAuctionId(null);
                                                         setFormData({
-                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', inspectionDate: '', bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: ''
+                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: ''
                                                         });
                                                         setSelectedFile(null);
                                                         setSelectedImage(null);
@@ -1737,7 +1740,7 @@ const AdminDashboard = () => {
                                     <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex flex-wrap gap-3">
                                         <div className="relative flex-1 min-w-[200px]">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="Search by title, borrower, or city..."
                                                 className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all bg-white"
@@ -1746,7 +1749,7 @@ const AdminDashboard = () => {
                                             />
                                         </div>
                                         <div className="flex gap-2">
-                                            <select 
+                                            <select
                                                 className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
                                                 value={filterCity}
                                                 onChange={(e) => setFilterCity(e.target.value)}
@@ -1756,7 +1759,7 @@ const AdminDashboard = () => {
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
-                                            <select 
+                                            <select
                                                 className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
                                                 value={filterType}
                                                 onChange={(e) => setFilterType(e.target.value)}
@@ -1782,22 +1785,35 @@ const AdminDashboard = () => {
                                         <tbody className="divide-y divide-slate-100">
                                             {(() => {
                                                 const filteredAuctions = allAuctions.filter(a => {
-                                                    const matchesSearch = !searchTerm || 
-                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                    const matchesSearch = !searchTerm ||
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field =>
                                                             field?.toLowerCase().includes(searchTerm.toLowerCase())
                                                         );
                                                     const matchesCity = !filterCity || a.cityName === filterCity;
                                                     const matchesType = !filterType || a.propertyType === filterType;
                                                     return matchesSearch && matchesCity && matchesType;
                                                 });
-                                                
+
                                                 return filteredAuctions
                                                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                                     .map(auction => (
                                                         <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
                                                             <td className="px-5 py-3">
-                                                                <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                                <p className="text-[11px] font-black text-brand-blue uppercase tracking-wider mt-0.5">{auction.propertyType}</p>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                                                        {auction.imageUrl ? (
+                                                                            <img src={getFileUrl(auction.imageUrl)} className="w-full h-full object-cover" alt="Thumb" />
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                                                <ImageIcon size={14} />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                                        <p className="text-[11px] font-black text-brand-blue uppercase tracking-wider mt-0.5">{auction.propertyType}</p>
+                                                                    </div>
+                                                                </div>
                                                             </td>
                                                             <td className="px-5 py-3">
                                                                 <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
@@ -1812,19 +1828,34 @@ const AdminDashboard = () => {
                                                                 <p className="text-[10px] text-slate-400 mt-0.5">{new Date(auction.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
                                                             </td>
                                                             <td className="px-5 py-3 text-center">
-                                                                {auction.noticeUrl ? (
-                                                                    <a 
-                                                                        href={getFileUrl(auction.noticeUrl)} 
-                                                                        target="_blank" 
-                                                                        rel="noreferrer"
-                                                                        className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
-                                                                        title="View/Download Notice"
-                                                                    >
-                                                                        <FileDown className="w-4 h-4" />
-                                                                    </a>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-slate-300 italic">No File</span>
-                                                                )}
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    {(auction.noticeUrls && auction.noticeUrls.length > 0) ? (
+                                                                        auction.noticeUrls.map((url, idx) => (
+                                                                            <a
+                                                                                key={idx}
+                                                                                href={getFileUrl(url)}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="p-1.5 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                                title={`Notice ${idx + 1}`}
+                                                                            >
+                                                                                <FileDown className="w-3.5 h-3.5" />
+                                                                            </a>
+                                                                        ))
+                                                                    ) : auction.noticeUrl ? (
+                                                                        <a
+                                                                            href={getFileUrl(auction.noticeUrl)}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="p-1.5 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                            title="View Notice"
+                                                                        >
+                                                                            <FileDown className="w-3.5 h-3.5" />
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-slate-300 italic">No File</span>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                             <td className="px-5 py-3 text-right">
                                                                 <button
@@ -1844,8 +1875,8 @@ const AdminDashboard = () => {
 
                                 {(() => {
                                     const filteredAuctions = allAuctions.filter(a => {
-                                        const matchesSearch = !searchTerm || 
-                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                        const matchesSearch = !searchTerm ||
+                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field =>
                                                 field?.toLowerCase().includes(searchTerm.toLowerCase())
                                             );
                                         const matchesCity = !filterCity || a.cityName === filterCity;
@@ -1931,7 +1962,7 @@ const AdminDashboard = () => {
                                     <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex flex-wrap gap-3">
                                         <div className="relative flex-1 min-w-[200px]">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="Search your postings..."
                                                 className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all bg-white"
@@ -1940,7 +1971,7 @@ const AdminDashboard = () => {
                                             />
                                         </div>
                                         <div className="flex gap-2">
-                                            <select 
+                                            <select
                                                 className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
                                                 value={filterCity}
                                                 onChange={(e) => setFilterCity(e.target.value)}
@@ -1950,7 +1981,7 @@ const AdminDashboard = () => {
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
-                                            <select 
+                                            <select
                                                 className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand-blue"
                                                 value={filterType}
                                                 onChange={(e) => setFilterType(e.target.value)}
@@ -1978,8 +2009,8 @@ const AdminDashboard = () => {
                                                 // Show ALL auctions in the management tab for admins
                                                 const myAuctions = allAuctions;
                                                 const filteredMyAuctions = myAuctions.filter(a => {
-                                                    const matchesSearch = !searchTerm || 
-                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                    const matchesSearch = !searchTerm ||
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field =>
                                                             field?.toLowerCase().includes(searchTerm.toLowerCase())
                                                         );
                                                     const matchesCity = !filterCity || a.cityName === filterCity;
@@ -1992,8 +2023,21 @@ const AdminDashboard = () => {
                                                     .map(auction => (
                                                         <tr key={auction.id} className="hover:bg-slate-50/50 transition-colors">
                                                             <td className="px-5 py-3">
-                                                                <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
-                                                                <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType}</p>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                                                        {auction.imageUrl ? (
+                                                                            <img src={getFileUrl(auction.imageUrl)} className="w-full h-full object-cover" alt="Thumb" />
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                                                <ImageIcon size={14} />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-bold text-sm text-slate-900 truncate max-w-[200px]">{auction.title}</p>
+                                                                        <p className="text-[11px] text-brand-blue font-black tracking-wide uppercase mt-0.5">{auction.propertyType}</p>
+                                                                    </div>
+                                                                </div>
                                                             </td>
                                                             <td className="px-5 py-3">
                                                                 <p className="font-bold text-xs text-slate-700">{auction.borrowerName || 'N/A'}</p>
@@ -2007,19 +2051,34 @@ const AdminDashboard = () => {
                                                                 <p className="font-black text-sm text-brand-dark">₹{auction.reservePrice}</p>
                                                             </td>
                                                             <td className="px-5 py-3 text-center">
-                                                                {auction.noticeUrl ? (
-                                                                    <a 
-                                                                        href={getFileUrl(auction.noticeUrl)} 
-                                                                        target="_blank" 
-                                                                        rel="noreferrer"
-                                                                        className="p-2 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
-                                                                        title="View/Download Notice"
-                                                                    >
-                                                                        <FileDown className="w-4 h-4" />
-                                                                    </a>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-slate-300 italic">No File</span>
-                                                                )}
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    {(auction.noticeUrls && auction.noticeUrls.length > 0) ? (
+                                                                        auction.noticeUrls.map((url, idx) => (
+                                                                            <a
+                                                                                key={idx}
+                                                                                href={getFileUrl(url)}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="p-1.5 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                                title={`Notice ${idx + 1}`}
+                                                                            >
+                                                                                <FileDown className="w-3.5 h-3.5" />
+                                                                            </a>
+                                                                        ))
+                                                                    ) : auction.noticeUrl ? (
+                                                                        <a
+                                                                            href={getFileUrl(auction.noticeUrl)}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="p-1.5 text-brand-blue hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                                                            title="View Notice"
+                                                                        >
+                                                                            <FileDown className="w-3.5 h-3.5" />
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-slate-300 italic">No File</span>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                             <td className="px-5 py-3 text-right">
                                                                 <div className="flex items-center justify-end gap-1">
@@ -2051,12 +2110,15 @@ const AdminDashboard = () => {
                                                                                 auctionEndDate: auction.auctionEndDate ? auction.auctionEndDate.slice(0, 16) : '',
                                                                                 inspectionDate: auction.inspectionDate ? auction.inspectionDate.slice(0, 16) : '',
                                                                                 bankContactDetails: auction.bankContactDetails || '',
-                                                                                possession: auction.possession || 'Symbolic',
+                                                                                possession: auction.possession || '',
                                                                                 noticeUrl: auction.noticeUrl || '',
-                                                                                imageUrl: auction.imageUrl || ''
+                                                                                imageUrl: auction.imageUrl || '',
+                                                                                noticeUrls: auction.noticeUrls || (auction.noticeUrl ? [auction.noticeUrl] : []),
+                                                                                imageUrls: auction.imageUrls || (auction.imageUrl ? [auction.imageUrl] : [])
                                                                             });
                                                                             setImagePreview(null);
                                                                             setActiveTab('post-auction');
+                                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
                                                                         }}
                                                                         className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
                                                                         title="Edit Auction"
@@ -2078,8 +2140,8 @@ const AdminDashboard = () => {
                                             {(() => {
                                                 const myAuctions = allAuctions;
                                                 const filteredMyAuctions = myAuctions.filter(a => {
-                                                    const matchesSearch = !searchTerm || 
-                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                                    const matchesSearch = !searchTerm ||
+                                                        [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field =>
                                                             field?.toLowerCase().includes(searchTerm.toLowerCase())
                                                         );
                                                     const matchesCity = !filterCity || a.cityName === filterCity;
@@ -2110,8 +2172,8 @@ const AdminDashboard = () => {
                                 {(() => {
                                     const myAuctions = allAuctions;
                                     const filteredMyAuctions = myAuctions.filter(a => {
-                                        const matchesSearch = !searchTerm || 
-                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field => 
+                                        const matchesSearch = !searchTerm ||
+                                            [a.title, a.borrowerName, a.cityName, a.bankName, a.locality].some(field =>
                                                 field?.toLowerCase().includes(searchTerm.toLowerCase())
                                             );
                                         const matchesCity = !filterCity || a.cityName === filterCity;

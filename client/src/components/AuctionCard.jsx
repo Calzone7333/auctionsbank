@@ -26,8 +26,20 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
 
     const [imageError, setImageError] = React.useState(false);
 
-    // Image logic: Use ONLY imageUrl
-    const imageUrl = auction.imageUrl ? getFileUrl(auction.imageUrl) : null;
+    // Image logic: Use primary imageUrl OR first in imageUrls array
+    const imageUrl = auction.imageUrl 
+        ? getFileUrl(auction.imageUrl) 
+        : (auction.imageUrls && auction.imageUrls.length > 0)
+            ? getFileUrl(auction.imageUrls[0])
+            : null;
+
+    const noticeCount = (auction.noticeUrls && auction.noticeUrls.length > 0) 
+        ? auction.noticeUrls.length 
+        : auction.noticeUrl ? 1 : 0;
+    
+    const imageCount = (auction.imageUrls && auction.imageUrls.length > 0)
+        ? auction.imageUrls.length
+        : auction.imageUrl ? 1 : 0;
 
     /* ─── LIST VIEW ─── */
     if (viewMode === 'list') {
@@ -132,6 +144,14 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
                         <Calendar className="w-2.5 h-2.5" />
                         {dateStr}
                     </div>
+
+                    {/* Image count pill */}
+                    {imageCount > 1 && (
+                        <div className="absolute bottom-3 left-3 bg-brand-dark/60 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full border border-white/10 uppercase tracking-widest shadow-sm">
+                            <ImageIcon className="w-2.5 h-2.5 inline-block mr-1" />
+                            {imageCount} Photos
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="px-5 pt-5">
@@ -185,6 +205,22 @@ const AuctionCard = ({ auction, viewMode = 'grid' }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Multiple Notices info */}
+                {noticeCount > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                            {[...Array(Math.min(noticeCount, 3))].map((_, i) => (
+                                <div key={i} className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-red-50 flex items-center justify-center">
+                                    <FileText className="w-2.5 h-2.5 text-red-500" />
+                                </div>
+                            ))}
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#4e71c4]">
+                            {noticeCount} Document{noticeCount > 1 ? 's' : ''} Attached
+                        </span>
+                    </div>
+                )}
 
                 {/* CTA */}
                 <Link
