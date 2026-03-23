@@ -133,6 +133,7 @@ public class AuctionController {
         masked.setAuctionDate(original.getAuctionDate());
         masked.setAuctionEndDate(original.getAuctionEndDate());
         masked.setImageUrl(original.getImageUrl());
+        masked.setImageUrls(original.getImageUrls());
         masked.setArea(original.getArea());
         masked.setBidIncrement(original.getBidIncrement());
         masked.setInspectionDate(original.getInspectionDate());
@@ -148,6 +149,7 @@ public class AuctionController {
         masked.setLocality(null);
         masked.setBankContactDetails(null);
         masked.setNoticeUrl(null);
+        masked.setNoticeUrls(null);
         masked.setContactOfficer(null);
         masked.setContactNumber(null);
         masked.setFacing(null);
@@ -349,6 +351,8 @@ public class AuctionController {
             auction.setInspectionDate(updatedAuction.getInspectionDate());
             auction.setBankContactDetails(updatedAuction.getBankContactDetails());
             auction.setPossession(updatedAuction.getPossession());
+            auction.setImageUrls(updatedAuction.getImageUrls());
+            auction.setNoticeUrls(updatedAuction.getNoticeUrls());
 
             Auction saved = auctionRepository.save(auction);
             return ResponseEntity.ok(saved);

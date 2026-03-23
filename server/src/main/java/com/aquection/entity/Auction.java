@@ -63,6 +63,17 @@ public class Auction {
     private LocalDateTime emdLastDate;
     private String createdByEmail;
     private boolean isActive = true;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "auction_images", joinColumns = @JoinColumn(name = "auction_id"))
+    @Column(name = "image_url")
+    private java.util.List<String> imageUrls = new java.util.ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "auction_notices", joinColumns = @JoinColumn(name = "auction_id"))
+    @Column(name = "notice_url")
+    private java.util.List<String> noticeUrls = new java.util.ArrayList<>();
+
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp
