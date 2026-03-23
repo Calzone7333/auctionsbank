@@ -28,10 +28,13 @@ public class Auction {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
     private String bankName;
 
+    @Column(columnDefinition = "TEXT")
     private String cityName;
 
+    @Column(columnDefinition = "TEXT")
     private String propertyType; // Residential, Commercial, etc.
 
     private BigDecimal reservePrice;
@@ -42,21 +45,28 @@ public class Auction {
 
     private LocalDateTime auctionEndDate;
 
+    @Column(columnDefinition = "TEXT")
     private String noticeUrl;
+    @Column(columnDefinition = "TEXT")
     private String imageUrl;
 
     // Detailed Fields
+    @Column(columnDefinition = "TEXT")
     private String borrowerName;
     @Column(columnDefinition = "TEXT")
     private String location;
+    @Column(columnDefinition = "TEXT")
     private String locality;
     @Column(columnDefinition = "TEXT")
     private String bankContactDetails;
+    @Column(columnDefinition = "TEXT")
     private String area;
     private String facing;
     private String possession; // Physical, Symbolic
     private String ownership; // Freehold, Leasehold
+    @Column(columnDefinition = "TEXT")
     private String contactOfficer;
+    @Column(columnDefinition = "TEXT")
     private String contactNumber;
     private BigDecimal bidIncrement;
     private LocalDateTime inspectionDate;
