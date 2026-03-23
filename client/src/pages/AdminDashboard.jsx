@@ -367,6 +367,7 @@ const AdminDashboard = () => {
 
             if (response.ok) {
                 alert(editingAuctionId ? 'Auction updated successfully!' : 'Auction posted successfully!');
+                const isEditing = editingAuctionId !== null;
                 setEditingAuctionId(null);
                 setFormData({
                     title: '', description: '', borrowerName: '', bankName: '',

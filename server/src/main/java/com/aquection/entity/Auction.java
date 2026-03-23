@@ -22,7 +22,7 @@ public class Auction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -61,8 +61,11 @@ public class Auction {
     private String bankContactDetails;
     @Column(columnDefinition = "TEXT")
     private String area;
+    @Column(columnDefinition = "TEXT")
     private String facing;
+    @Column(columnDefinition = "TEXT")
     private String possession; // Physical, Symbolic
+    @Column(columnDefinition = "TEXT")
     private String ownership; // Freehold, Leasehold
     @Column(columnDefinition = "TEXT")
     private String contactOfficer;
