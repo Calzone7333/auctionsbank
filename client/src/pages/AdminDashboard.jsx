@@ -186,7 +186,7 @@ const AdminDashboard = () => {
             let start = current.index + current.length;
             let end = next ? next.index : text.length;
             let value = text.substring(start, end).trim();
-            
+
             const cleanPrefix = /^(?:Branch Office|Branch|Lender|Borrower|Address|Location|Area|Details|North|South|East|West|GPS|Survey|Patta|Website|Property ID|[:\-\*=\.\s\[\]\(\)])+/i;
             value = value.replace(cleanPrefix, '').trim();
 
@@ -236,7 +236,7 @@ const AdminDashboard = () => {
         const parseDate = (val) => {
             if (!val) return null;
             let ds = "";
-            let ts = "10:00"; 
+            let ts = "10:00";
             const dmy = val.match(/(\d{1,2})[./\-\s]+(\d{1,2})[./\-\s]+(\d{2,4})/);
             if (dmy) {
                 let [_, d, m, y] = dmy;
@@ -282,7 +282,7 @@ const AdminDashboard = () => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
             setSelectedImages(prev => [...prev, ...files]);
-            
+
             const newPreviews = files.map(file => URL.createObjectURL(file));
             setImagePreviews(prev => [...prev, ...newPreviews]);
         }
@@ -347,10 +347,10 @@ const AdminDashboard = () => {
                 noticeUrls: finalNoticeUrls
             };
 
-            const url = editingAuctionId 
+            const url = editingAuctionId
                 ? `${API_BASE_URL}/auctions/${editingAuctionId}`
                 : `${API_BASE_URL}/auctions`;
-            
+
             const method = editingAuctionId ? 'PUT' : 'POST';
 
             const response = await fetch(url, {
@@ -366,7 +366,7 @@ const AdminDashboard = () => {
                     title: '', description: '', borrowerName: '', bankName: '',
                     propertyType: '', location: '', area: '', locality: '',
                     cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '',
-                    emdLastDate: '', auctionDate: '', auctionEndDate: '', 
+                    emdLastDate: '', auctionDate: '', auctionEndDate: '',
                     bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: '',
                     noticeUrls: [], imageUrls: []
                 });
@@ -1391,8 +1391,8 @@ const AdminDashboard = () => {
                                             </div>
                                         </div>
 
-                                        {/* Row 7: Bank Contact & Possession */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Row 7: Bank Contact */}
+                                        <div className="grid grid-cols-1 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Bank Contact Details</label>
                                                 <input
@@ -1403,21 +1403,6 @@ const AdminDashboard = () => {
                                                     value={formData.bankContactDetails}
                                                     onChange={handleFormChange}
                                                 />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Possession Type</label>
-                                                <select
-                                                    name="possession"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
-                                                    value={formData.possession}
-                                                    onChange={handleFormChange}
-                                                >
-                                                    <option value="">Select Possession Status</option>
-                                                    <option value="Symbolic">Symbolic</option>
-                                                    <option value="Physical">Physical</option>
-                                                    <option value="Constructive">Constructive</option>
-                                                    <option value="Non-available">Non-available</option>
-                                                </select>
                                             </div>
                                         </div>
 
@@ -1450,15 +1435,15 @@ const AdminDashboard = () => {
                                                         {(imagePreviews.length > 0 || (formData.imageUrls && formData.imageUrls.length > 0)) ? (
                                                             <div className="space-y-4">
                                                                 <div className="relative group aspect-[21/9] rounded-2xl overflow-hidden border border-slate-200 bg-white">
-                                                                    <img 
-                                                                        src={imagePreviews[0] || getFileUrl(formData.imageUrls[0])} 
-                                                                        className="w-full h-full object-cover" 
-                                                                        alt="Main Preview" 
+                                                                    <img
+                                                                        src={imagePreviews[0] || getFileUrl(formData.imageUrls[0])}
+                                                                        className="w-full h-full object-cover"
+                                                                        alt="Main Preview"
                                                                     />
                                                                     <div className="absolute top-4 left-4 px-3 py-1 bg-brand-blue text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
                                                                         Main Display
                                                                     </div>
-                                                                    <button 
+                                                                    <button
                                                                         type="button"
                                                                         onClick={() => removeImage(0)}
                                                                         className="absolute top-4 right-4 p-2 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
@@ -1474,7 +1459,7 @@ const AdminDashboard = () => {
                                                                         {imagePreviews.slice(1).map((preview, idx) => (
                                                                             <div key={`new-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white">
                                                                                 <img src={preview} className="w-full h-full object-cover" alt="Other Preview" />
-                                                                                <button 
+                                                                                <button
                                                                                     type="button"
                                                                                     onClick={() => removeImage(idx + 1)}
                                                                                     className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
@@ -1487,7 +1472,7 @@ const AdminDashboard = () => {
                                                                         {formData.imageUrls && formData.imageUrls.slice(1).map((url, idx) => (
                                                                             <div key={`old-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white">
                                                                                 <img src={getFileUrl(url)} className="w-full h-full object-cover" alt="Saved Preview" />
-                                                                                <button 
+                                                                                <button
                                                                                     type="button"
                                                                                     onClick={() => setFormData(p => ({ ...p, imageUrls: p.imageUrls.filter((_, i) => i !== idx + 1) }))}
                                                                                     className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
@@ -1547,7 +1532,7 @@ const AdminDashboard = () => {
                                                                 </div>
                                                                 <span className="text-[11px] font-black text-slate-600 uppercase tracking-tight truncate max-w-[200px]">SAVED_NOTICE_{idx + 1}</span>
                                                             </div>
-                                                            <button 
+                                                            <button
                                                                 type="button"
                                                                 onClick={() => setFormData(p => ({ ...p, noticeUrls: p.noticeUrls.filter((_, i) => i !== idx) }))}
                                                                 className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg"
@@ -1565,7 +1550,7 @@ const AdminDashboard = () => {
                                                                 </div>
                                                                 <span className="text-[11px] font-black text-brand-blue uppercase tracking-tight truncate max-w-[200px]">{file.name}</span>
                                                             </div>
-                                                            <button 
+                                                            <button
                                                                 type="button"
                                                                 onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
                                                                 className="p-1.5 text-brand-blue/50 hover:text-red-500 rounded-lg"
@@ -1591,11 +1576,16 @@ const AdminDashboard = () => {
                                                     onClick={() => {
                                                         setEditingAuctionId(null);
                                                         setFormData({
-                                                            title: '', description: '', borrowerName: '', bankName: '', propertyType: '', location: '', area: '', locality: '', cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '', emdLastDate: '', auctionDate: '', auctionEndDate: '', bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: ''
+                                                            title: '', description: '', borrowerName: '', bankName: '',
+                                                            propertyType: '', location: '', area: '', locality: '',
+                                                            cityName: '', reservePrice: '', emdAmount: '', bidIncrement: '',
+                                                            emdLastDate: '', auctionDate: '', auctionEndDate: '',
+                                                            bankContactDetails: '', possession: '', noticeUrl: '', imageUrl: '',
+                                                            noticeUrls: [], imageUrls: []
                                                         });
-                                                        setSelectedFile(null);
-                                                        setSelectedImage(null);
-                                                        setImagePreview(null);
+                                                        setSelectedFiles([]);
+                                                        setSelectedImages([]);
+                                                        setImagePreviews([]);
                                                         setActiveTab('my-auctions');
                                                     }}
                                                     className="px-6 py-3 font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest"
@@ -2116,7 +2106,9 @@ const AdminDashboard = () => {
                                                                                 noticeUrls: auction.noticeUrls || (auction.noticeUrl ? [auction.noticeUrl] : []),
                                                                                 imageUrls: auction.imageUrls || (auction.imageUrl ? [auction.imageUrl] : [])
                                                                             });
-                                                                            setImagePreview(null);
+                                                                            setImagePreviews([]);
+                                                                            setSelectedFiles([]);
+                                                                            setSelectedImages([]);
                                                                             setActiveTab('post-auction');
                                                                             window.scrollTo({ top: 0, behavior: 'smooth' });
                                                                         }}

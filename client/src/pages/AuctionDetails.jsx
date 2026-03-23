@@ -39,7 +39,7 @@ const AuctionDetails = () => {
                 try {
                     const userData = JSON.parse(storedUser);
                     if (userData.token) headers['Authorization'] = `Bearer ${userData.token}`;
-                } catch(e) {}
+                } catch (e) { }
             }
         }
 
@@ -172,7 +172,7 @@ const AuctionDetails = () => {
                                 {auction.imageUrls && auction.imageUrls.length > 1 && (
                                     <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
                                         {auction.imageUrls.map((url, idx) => (
-                                            <button 
+                                            <button
                                                 key={idx}
                                                 onClick={() => setAuction(prev => ({ ...prev, imageUrl: url }))}
                                                 className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${auction.imageUrl === url ? 'border-brand-blue ring-2 ring-brand-blue/20' : 'border-transparent hover:border-slate-200'}`}
