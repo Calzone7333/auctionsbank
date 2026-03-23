@@ -215,7 +215,7 @@ const AdminDashboard = () => {
         if (extracted.cityName) data.cityName = extracted.cityName.split('/')[0].split(',')[0].replace(/(?:District|City|Town|State)[:\s]*/i, '').trim();
 
         const parseNum = (val) => {
-            if (!val) return '';
+            if (!val) return null;
             let clean = val.replace(/,/g, '').toLowerCase();
             let mult = 1;
             if (clean.includes('lakh')) mult = 100000;
@@ -226,7 +226,7 @@ const AdminDashboard = () => {
                 if (mult > 1) n = n * mult;
                 return Math.floor(n).toString();
             }
-            return '';
+            return null;
         };
         if (extracted.reservePrice) data.reservePrice = parseNum(extracted.reservePrice);
         if (extracted.emdAmount) data.emdAmount = parseNum(extracted.emdAmount);
@@ -344,8 +344,14 @@ const AdminDashboard = () => {
                 imageUrl: finalImageUrls[0] || '', // First image as main
                 imageUrls: finalImageUrls,
                 noticeUrl: finalNoticeUrls[0] || '', // First notice as main
-                noticeUrls: finalNoticeUrls
+                noticeUrls: finalNoticeUrls,
+                // Sanitize numbers
+                reservePrice: formData.reservePrice || null,
+                emdAmount: formData.emdAmount || null,
+                bidIncrement: formData.bidIncrement || null
             };
+
+            console.log("DEBUG: Posting Auction Data:", dataToSubmit);
 
             const url = editingAuctionId
                 ? `${API_BASE_URL}/auctions/${editingAuctionId}`
@@ -402,7 +408,10 @@ const AdminDashboard = () => {
                 const errorMessage = await response.text();
                 alert(errorMessage || 'Unauthorized. You may not have permission for this action.');
             } else {
-                alert('Failed to post auction. Please check your network or try again.');
+                const errorData = await response.json().catch(() => ({}));
+                const msg = errorData.message || errorData.error || 'Server Error';
+                console.error("Post failed:", errorData);
+                alert(`Failed: ${msg}`);
             }
         } catch (error) {
             console.error('Error posting auction:', error);

@@ -66,12 +66,12 @@ public class Auction {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "auction_images", joinColumns = @JoinColumn(name = "auction_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT", length = 2000)
     private java.util.List<String> imageUrls = new java.util.ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "auction_notices", joinColumns = @JoinColumn(name = "auction_id"))
-    @Column(name = "notice_url")
+    @Column(name = "notice_url", columnDefinition = "TEXT", length = 2000)
     private java.util.List<String> noticeUrls = new java.util.ArrayList<>();
 
     @CreationTimestamp

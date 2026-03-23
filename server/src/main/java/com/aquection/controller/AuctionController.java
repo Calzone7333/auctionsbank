@@ -299,15 +299,21 @@ public class AuctionController {
             String email = (principal instanceof UserDetails) ? ((UserDetails) principal).getUsername()
                     : principal.toString();
 
-            System.out.println("DEBUG (CREATE): Saving auction for email: " + email);
+            System.out.println("DEBUG (CREATE): Saving auction for email: " + email + " | Title: " + auction.getTitle());
             auction.setCreatedByEmail(email);
+
+            // Ensure lists are initialized before saving
+            if (auction.getImageUrls() == null) auction.setImageUrls(new java.util.ArrayList<>());
+            if (auction.getNoticeUrls() == null) auction.setNoticeUrls(new java.util.ArrayList<>());
+
             Auction saved = auctionRepository.save(auction);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            System.err.println("FATAL ERROR in createAuction: " + e.getMessage());
+            String fullError = e.getClass().getSimpleName() + ": " + e.getMessage();
+            System.err.println("FATAL ERROR in createAuction: " + fullError);
             e.printStackTrace();
             return ResponseEntity.status(500)
-                    .body(Collections.singletonMap("error", "System Error: " + e.getMessage()));
+                    .body(java.util.Map.of("error", "System Error", "message", fullError));
         }
     }
 
@@ -329,43 +335,57 @@ public class AuctionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction updatedAuction) {
+        if (!isAdminFromDB()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access denied. Admin only."));
+        }
         return auctionRepository.findById(id).map(auction -> {
-            // Update fields (admins can edit anything)
-            auction.setTitle(updatedAuction.getTitle());
-            auction.setDescription(updatedAuction.getDescription());
-            auction.setBankName(updatedAuction.getBankName());
-            auction.setCityName(updatedAuction.getCityName());
-            auction.setPropertyType(updatedAuction.getPropertyType());
-            auction.setReservePrice(updatedAuction.getReservePrice());
-            auction.setEmdAmount(updatedAuction.getEmdAmount());
-            auction.setAuctionDate(updatedAuction.getAuctionDate());
-            auction.setNoticeUrl(updatedAuction.getNoticeUrl());
-            auction.setImageUrl(updatedAuction.getImageUrl());
-            auction.setBorrowerName(updatedAuction.getBorrowerName());
-            auction.setLocation(updatedAuction.getLocation());
-            auction.setLocality(updatedAuction.getLocality());
-            auction.setArea(updatedAuction.getArea());
-            auction.setBidIncrement(updatedAuction.getBidIncrement());
-            auction.setEmdLastDate(updatedAuction.getEmdLastDate());
-            auction.setAuctionEndDate(updatedAuction.getAuctionEndDate());
-            auction.setInspectionDate(updatedAuction.getInspectionDate());
-            auction.setBankContactDetails(updatedAuction.getBankContactDetails());
-            auction.setPossession(updatedAuction.getPossession());
-            auction.setImageUrls(updatedAuction.getImageUrls());
-            auction.setNoticeUrls(updatedAuction.getNoticeUrls());
+            try {
+                // Update basic fields
+                auction.setTitle(updatedAuction.getTitle());
+                auction.setDescription(updatedAuction.getDescription());
+                auction.setBankName(updatedAuction.getBankName());
+                auction.setCityName(updatedAuction.getCityName());
+                auction.setPropertyType(updatedAuction.getPropertyType());
+                auction.setReservePrice(updatedAuction.getReservePrice());
+                auction.setEmdAmount(updatedAuction.getEmdAmount());
+                auction.setAuctionDate(updatedAuction.getAuctionDate());
+                auction.setNoticeUrl(updatedAuction.getNoticeUrl());
+                auction.setImageUrl(updatedAuction.getImageUrl());
+                auction.setBorrowerName(updatedAuction.getBorrowerName());
+                auction.setLocation(updatedAuction.getLocation());
+                auction.setLocality(updatedAuction.getLocality());
+                auction.setArea(updatedAuction.getArea());
+                auction.setBidIncrement(updatedAuction.getBidIncrement());
+                auction.setEmdLastDate(updatedAuction.getEmdLastDate());
+                auction.setAuctionEndDate(updatedAuction.getAuctionEndDate());
+                auction.setInspectionDate(updatedAuction.getInspectionDate());
+                auction.setBankContactDetails(updatedAuction.getBankContactDetails());
+                auction.setPossession(updatedAuction.getPossession());
 
-            Auction saved = auctionRepository.save(auction);
-            return ResponseEntity.ok(saved);
+                // Update multi-file collections safely
+                if (updatedAuction.getImageUrls() != null) {
+                    auction.setImageUrls(updatedAuction.getImageUrls());
+                }
+                if (updatedAuction.getNoticeUrls() != null) {
+                    auction.setNoticeUrls(updatedAuction.getNoticeUrls());
+                }
+
+                Auction saved = auctionRepository.save(auction);
+                return ResponseEntity.ok(saved);
+            } catch (Exception e) {
+                return ResponseEntity.status(500).body(java.util.Map.of("error", "Update failed", "message", e.getMessage()));
+            }
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
+        if (!isAdminFromDB()) {
+            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Access denied. Admin only."));
+        }
         System.out.println("Delete request received for auction ID: " + id);
         return auctionRepository.findById(id).map(auction -> {
-            // Perform Hard Delete (remove from database)
             auctionRepository.delete(auction);
-            System.out.println("Auction ID " + id + " deleted from database.");
             return ResponseEntity.ok("Auction deleted successfully");
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
