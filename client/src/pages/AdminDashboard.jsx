@@ -125,32 +125,31 @@ const AdminDashboard = () => {
         const data = { ...formData };
         const text = autoFillText;
 
-        // More restrictive mappings: require a separator (:, -, =) or a following newline
-        // This prevents capturing random words inside sentences as labels.
+        // More comprehensive field mappings with more synonyms and optional separators
         const fieldMappings = {
-            bankName: /(?:Bank Name|Bank|Financial Institution|Branch|Bank Branch)[:\-\.=]/i,
-            borrowerName: /(?:[Bb]?orrower Name|[Bb]?orrowers|[Bb]?orrower|Client|Name of Borrower)[:\-\.=]/i,
-            propertyType: /(?:Property Type|Type|Category|Prop Type)[:\-\.=]/i,
-            description: /(?:Description|Desc|Details|Property Details|Short Description)[:\-\.=]/i,
-            location: /(?:Location|Address|Property Location|Property Address|Prop Address)[:\-\.=]/i,
-            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Extent of Land|Size)[:\-\.=]/i,
-            locality: /(?:Locality|Loc|Area Name|Neighborhood|Situated at)[:\-\.=]/i,
-            cityName: /(?:City|Town|District|Place)[:\-\.=]/i,
-            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price)[:\-\.=]/i,
-            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit)[:\-\.=]/i,
-            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step)[:\-\.=]/i,
-            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail)[:\-\.=]/i,
-            possession: /(?:Possession|Possession Type|Status of Possession)[:\-\.=]/i,
-            emdLastDate: /(?:EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date)[:\-\.=]/i,
-            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date)[:\-\.=]/i,
-            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date)[:\-\.=]/i,
-            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date)[:\-\.=]/i
+            bankName: /(?:Bank Name|Bank|Financial Institution|Branch|Bank Branch|Lender|Institution)[:\-\.=\s]+(?=\S)/i,
+            borrowerName: /(?:[Bb]orrower Name|[Bb]orrowers?|[Cc]o-[Bb]orrower|Client|Name of Borrower|Account Name)[:\-\.=\s]+(?=\S)/i,
+            propertyType: /(?:Property Type|Type|Category|Prop Type|Asset Category)[:\-\.=\s]+(?=\S)/i,
+            description: /(?:Description|Desc|Details|Property Details|Short Description|Property Info)[:\-\.=\s]+(?=\S)/i,
+            location: /(?:Location|Address|Property Location|Property Address|Prop Address|Site Address|Situated at)[:\-\.=\s]+(?=\S)/i,
+            area: /(?:Area|Building Area|Total Land Area|Property Dimensions|Dimension|Extent|Sqft|Sq\.?ft|Extent of Land|Size|Land Area)[:\-\.=\s]+(?=\S)/i,
+            locality: /(?:Locality|Loc|Area Name|Neighborhood|Mandal|Village|Tehsil)[:\-\.=\s]+(?=\S)/i,
+            cityName: /(?:City|Town|District|Place|State)[:\-\.=\s]+(?=\S)/i,
+            reservePrice: /(?:Reserve Price|Price|RP|Start Price|Min Price|Base Price|Auction Price)[:\-\.=\s]+(?=\S)/i,
+            emdAmount: /(?:EMD Amount|EMD|Earnest Money|Initial Deposit|EMD \(Rs\)|EMD Price)[:\-\.=\s]+(?=\S)/i,
+            bidIncrement: /(?:Bid Increment|Increment|Bid Multiplier|Bid Step|Min Increment)[:\-\.=\s]+(?=\S)/i,
+            bankContactDetails: /(?:Bank Contact Details|Contact|Officer|Person|Authorised Officer|Contact Officer|Phone|Mobile|Contact No|Cell|Tel|Ph|Email|Mail|In-charge)[:\-\.=\s]+(?=\S)/i,
+            possession: /(?:Possession|Possession Type|Status of Possession|Nature of Possession)[:\-\.=\s]+(?=\S)/i,
+            emdLastDate: /(?:EMD Last Date|Last Date of EMD|EMD Submission|EMD Submission Date|Last Date|Last date for EMD)[:\-\.=\s]+(?=\S)/i,
+            auctionDate: /(?:Auction Start Date & Time|Auction Date & Time|Auction Date|Date of Auction|Auction Start|Start Date|Date & Time of Auction)[:\-\.=\s]+(?=\S)/i,
+            auctionEndDate: /(?:Auction End Date & Time|Auction End Date|Auction End|End Date|Auction Ending)[:\-\.=\s]+(?=\S)/i,
+            inspectionDate: /(?:Property Inspection|Inspection Date|Inspection|Visit Date|Date of Inspection)[:\-\.=\s]+(?=\S)/i
         };
 
         // Find all label positions
         const matches = [];
         Object.entries(fieldMappings).forEach(([field, regex]) => {
-            const pattern = new RegExp(regex.source + "\\s*", 'gi');
+            const pattern = new RegExp(regex.source, 'gi');
             let match;
             while ((match = pattern.exec(text)) !== null) {
                 matches.push({
@@ -162,56 +161,55 @@ const AdminDashboard = () => {
             }
         });
 
-        // Special fallback for fields without separators (at start of lines)
-        // e.g., "City Chittoor" (sometimes copiers miss the colon)
-        const fallbackLabels = [
-            { field: 'cityName', regex: /^City\s+/im },
-            { field: 'reservePrice', regex: /^Reserve Price\s+/im },
-            { field: 'emdAmount', regex: /^EMD Amount\s+/im }
-        ];
-
-        fallbackLabels.forEach(({ field, regex }) => {
-            const match = text.match(regex);
-            if (match && !matches.some(m => m.field === field)) {
-                matches.push({
-                    field,
-                    index: match.index,
-                    length: match[0].length,
-                    label: match[0]
-                });
+        // Filter out overlapping matches (keep the first/longer match)
+        matches.sort((a, b) => a.index - b.index || b.length - a.length);
+        const filteredMatches = [];
+        let lastEnd = -1;
+        matches.forEach(m => {
+            if (m.index >= lastEnd) {
+                filteredMatches.push(m);
+                lastEnd = m.index + m.length;
             }
         });
 
-        // Sort matches by position
-        matches.sort((a, b) => a.index - b.index);
-
         const extracted = {};
-        for (let i = 0; i < matches.length; i++) {
-            const current = matches[i];
-            const next = matches[i + 1];
+        for (let i = 0; i < filteredMatches.length; i++) {
+            const current = filteredMatches[i];
+            const next = filteredMatches[i + 1];
             
             let start = current.index + current.length;
             let end = next ? next.index : text.length;
             
             let value = text.substring(start, end).trim();
             
-            // Clean value: Stop before common new line patterns or start of other text blocks
-            // This prevents "Bank Name: State Bank of India Description: ..." where Description is a missing label
+            // If the value contains common "next field" markers that weren't caught as labels
+            // (e.g. "Property Type" followed by "Description" without a colon)
+            const markers = Object.values(fieldMappings).map(r => r.source.split('|')[0].replace('(?:', '').replace(/[\[\]\(\)\.\+\*]/g, '')).filter(Boolean);
+            markers.forEach(mark => {
+                const pos = value.indexOf('\n' + mark);
+                if (pos !== -1 && (end === text.length || pos < end - start)) {
+                    value = value.substring(0, pos).trim();
+                }
+            });
+
+            // Clean value: If it's more than 5 lines, it's likely bleeding into next section unless it's description/location
             const lines = value.split('\n');
             if (lines.length > 1) {
-                // If it's more than 3 lines, it's likely bleeding into next section
-                if (current.field !== 'description' && current.field !== 'location') {
+                if (!['description', 'location', 'bankContactDetails'].includes(current.field)) {
+                    // For short fields, just take the first line or first meaningful part
                     value = lines[0].trim();
                 }
             }
 
-            // Remove trailing chars that look like field boundaries
-            value = value.replace(/[\[\]{}()\*\|]+$/, '').split(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s*[:\-]/)[0];
-            value = value.trim().replace(/[.,\s]+$/, '');
+            // Remove trailing chars that look like field boundaries or garbage
+            value = value.replace(/[\[\]{}()\*\|#]+$/, '').trim();
             
             if (extracted[current.field]) {
+                // If we found the same field multiple times, append if it's a multi-line type
                 if (['bankContactDetails', 'description', 'location'].includes(current.field)) {
-                    extracted[current.field] += ' | ' + value;
+                    if (!extracted[current.field].includes(value)) {
+                        extracted[current.field] += ' | ' + value;
+                    }
                 }
             } else {
                 extracted[current.field] = value;
@@ -220,43 +218,92 @@ const AdminDashboard = () => {
 
         // --- Post-processing ---
         
-        if (extracted.bankName) data.bankName = extracted.bankName;
-        if (extracted.borrowerName) data.borrowerName = extracted.borrowerName;
-        if (extracted.description) data.description = extracted.description;
-        if (extracted.location) data.location = extracted.location;
-        if (extracted.area) data.area = extracted.area;
-        if (extracted.locality) data.locality = extracted.locality;
-        if (extracted.possession) data.possession = extracted.possession;
+        const newData = { ...data };
+
+        // Simple strings
+        if (extracted.bankName) newData.bankName = extracted.bankName;
+        if (extracted.borrowerName) newData.borrowerName = extracted.borrowerName;
+        if (extracted.description) newData.description = extracted.description;
+        if (extracted.location) newData.location = extracted.location;
+        if (extracted.area) newData.area = extracted.area;
+        if (extracted.locality) newData.locality = extracted.locality;
+        if (extracted.possession) {
+            const p = extracted.possession.toLowerCase();
+            if (p.includes('phys')) newData.possession = 'Physical';
+            else if (p.includes('symb')) newData.possession = 'Symbolic';
+            else newData.possession = extracted.possession;
+        }
         
-        // City Name cleanup - prevents long fragments
+        // City Name cleanup
         if (extracted.cityName) {
-            let c = extracted.cityName.split(',').pop().trim();
-            if (c.length > 30) c = c.split(' ').pop(); // Take last word if it's long
-            data.cityName = c;
+            // Remove things like "Dist:" or "District" if they appear in the value
+            let c = extracted.cityName.replace(/(?:District|Dist|City|Town)[:\s]*/i, '').split(',').pop().trim();
+            if (c.length > 30) c = c.split(' ').pop(); 
+            newData.cityName = c;
         }
 
         // Financials (numbers)
         const parseNum = (val) => {
             if (!val) return '';
-            // Match first currency-like number
-            const numMatch = val.replace(/,/g, '').match(/(\d+\.?\d*)/);
-            return numMatch ? numMatch[1] : '';
+            // Remove currency symbols, commas, and other non-numeric stuff EXCEPT decimal point
+            // handle "10 Lakhs" or "1.5 Crores"
+            let clean = val.replace(/,/g, '').toLowerCase();
+            
+            let multiplier = 1;
+            if (clean.includes('lakh')) multiplier = 100000;
+            if (clean.includes('crore') || clean.includes('cr')) multiplier = 10000000;
+            
+            const numMatch = clean.match(/(\d+\.?\d*)/);
+            if (numMatch) {
+                let num = parseFloat(numMatch[1]);
+                if (multiplier > 1) num = num * multiplier;
+                return Math.floor(num).toString();
+            }
+            return '';
         };
         
-        if (extracted.reservePrice) data.reservePrice = parseNum(extracted.reservePrice);
-        if (extracted.emdAmount) data.emdAmount = parseNum(extracted.emdAmount);
-        if (extracted.bidIncrement) data.bidIncrement = parseNum(extracted.bidIncrement);
+        if (extracted.reservePrice) newData.reservePrice = parseNum(extracted.reservePrice);
+        if (extracted.emdAmount) newData.emdAmount = parseNum(extracted.emdAmount);
+        if (extracted.bidIncrement) newData.bidIncrement = parseNum(extracted.bidIncrement);
 
-        // Dates
+        // Dates and Times
+        const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        
         const parseDate = (val) => {
             if (!val) return null;
-            // Match DD[./-]MM[./-]YYYY
-            const dateMatch = val.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
-            if (!dateMatch) return null;
-            
-            const [_, d, m, y] = dateMatch;
-            let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            
+            let dateStr = "";
+            let timeStr = "10:00"; // Default
+
+            // Try DD-MM-YYYY format
+            const dmyMatch = val.match(/(\d{1,2})[./\-\s]+(\d{1,2})[./\-\s]+(\d{2,4})/);
+            if (dmyMatch) {
+                let [_, d, m, y] = dmyMatch;
+                if (y.length === 2) y = "20" + y;
+                dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            } else {
+                // Try format like "10-Jan-2024" or "Jan 10, 2024"
+                const monthMatch = val.match(new RegExp(`(\\d{1,2})[./\\-\\s]+(${monthNames.join('|')})[./\\-\\s]+(\\d{2,4})`, 'i'));
+                if (monthMatch) {
+                    let [_, d, m, y] = monthMatch;
+                    if (y.length === 2) y = "20" + y;
+                    const mIdx = monthNames.indexOf(m.toLowerCase().substring(0, 3)) + 1;
+                    dateStr = `${y}-${mIdx.toString().padStart(2, '0')}-${d.padStart(2, '0')}`;
+                }
+            }
+
+            if (!dateStr) {
+                // Try "Jan 10 2024"
+                const monthFirstMatch = val.match(new RegExp(`(${monthNames.join('|')})[./\\-\\s]+(\\d{1,2})[./\\-\\s]+(\\d{2,4})`, 'i'));
+                if (monthFirstMatch) {
+                    let [_, m, d, y] = monthFirstMatch;
+                    if (y.length === 2) y = "20" + y;
+                    const mIdx = monthNames.indexOf(m.toLowerCase().substring(0, 3)) + 1;
+                    dateStr = `${y}-${mIdx.toString().padStart(2, '0')}-${d.padStart(2, '0')}`;
+                }
+            }
+
+            if (!dateStr) return null;
+
             // Search for time (HH:MM)
             const timeMatch = val.match(/(\d{1,2})[:.](\d{2})(?:\s*:?\d{2})?(?:\s*([APM]{2}))?/i);
             if (timeMatch) {
@@ -267,24 +314,38 @@ const AdminDashboard = () => {
                 if (modifier === 'PM' && h < 12) h += 12;
                 if (modifier === 'AM' && h === 12) h = 0;
                 
-                dateStr += `T${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
-            } else {
-                dateStr += `T10:00`; // Default time
+                timeStr = `${h.toString().padStart(2, '0')}:${min.padStart(2, '0')}`;
             }
-            return dateStr;
+
+            return `${dateStr}T${timeStr}`;
         };
 
-        if (extracted.emdLastDate) data.emdLastDate = parseDate(extracted.emdLastDate);
-        if (extracted.auctionDate) data.auctionDate = parseDate(extracted.auctionDate);
-        if (extracted.auctionEndDate) data.auctionEndDate = parseDate(extracted.auctionEndDate);
-        if (extracted.inspectionDate) data.inspectionDate = parseDate(extracted.inspectionDate);
+        if (extracted.emdLastDate) newData.emdLastDate = parseDate(extracted.emdLastDate);
+        if (extracted.auctionDate) newData.auctionDate = parseDate(extracted.auctionDate);
+        if (extracted.auctionEndDate) newData.auctionEndDate = parseDate(extracted.auctionEndDate);
+        if (extracted.inspectionDate) newData.inspectionDate = parseDate(extracted.inspectionDate);
 
         // Concatenate contact info
         if (extracted.bankContactDetails) {
-            data.bankContactDetails = extracted.bankContactDetails.replace(/\|/g, '').trim();
+            newData.bankContactDetails = extracted.bankContactDetails.replace(/[\|#]+/g, ' ').trim();
         }
 
-        setFormData(data);
+        // Property Type mapping
+        if (extracted.propertyType) {
+            const pt = extracted.propertyType.toLowerCase();
+            if (pt.includes('flat') || pt.includes('floor') || pt.includes('apartment')) newData.propertyType = 'Flat and Floor';
+            else if (pt.includes('house') || pt.includes('residential')) newData.propertyType = 'House and Residential Plot';
+            else if (pt.includes('land') || pt.includes('plot') || pt.includes('site')) newData.propertyType = 'Land, Plot and Site';
+            else if (pt.includes('commercial')) newData.propertyType = 'All Commercial';
+            else if (pt.includes('office')) newData.propertyType = 'Office';
+            else if (pt.includes('shop')) newData.propertyType = 'Shop';
+            else if (pt.includes('industrial')) newData.propertyType = 'Industrial Plots, Land & Sheds';
+            else if (pt.includes('factory')) newData.propertyType = 'Factory Land & buildings';
+            else if (pt.includes('car')) newData.propertyType = 'Car';
+            else if (pt.includes('machinery')) newData.propertyType = 'Plant and Machinery';
+        }
+
+        setFormData(newData);
         setAutoFillText('');
         alert('Magic Auto-Fill completed! Please review the fields.');
     };
@@ -1288,14 +1349,14 @@ const AdminDashboard = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Description</label>
-                                                <input
-                                                    type="text"
+                                                <textarea
                                                     name="description"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    rows="1"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none resize-none"
                                                     placeholder="Brief property description"
                                                     value={formData.description}
                                                     onChange={handleFormChange}
-                                                />
+                                                ></textarea>
                                             </div>
                                         </div>
 
@@ -1303,14 +1364,14 @@ const AdminDashboard = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location</label>
-                                                <input
-                                                    type="text"
+                                                <textarea
                                                     name="location"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    rows="1"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none resize-none"
                                                     placeholder="Full property address"
                                                     value={formData.location}
                                                     onChange={handleFormChange}
-                                                />
+                                                ></textarea>
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Area (Dimensions)</label>
@@ -1402,7 +1463,7 @@ const AdminDashboard = () => {
                                         </div>
 
                                         {/* Row 6: Dates */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">EMD Submission Date</label>
                                                 <input
@@ -1430,6 +1491,16 @@ const AdminDashboard = () => {
                                                     name="auctionEndDate"
                                                     className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
                                                     value={formData.auctionEndDate}
+                                                    onChange={handleFormChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Inspection Date</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    name="inspectionDate"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all outline-none"
+                                                    value={formData.inspectionDate}
                                                     onChange={handleFormChange}
                                                 />
                                             </div>
