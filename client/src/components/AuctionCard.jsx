@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MapPin, Building2, IndianRupee, ArrowUpRight, Home, Briefcase, Warehouse, Castle, Gavel } from 'lucide-react';
+import { Calendar, MapPin, Building2, IndianRupee, ArrowUpRight, Home, Briefcase, Warehouse, Castle, Gavel, FileText, Image as ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getFileUrl } from '../apiConfig';
 
